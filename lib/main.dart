@@ -15,7 +15,7 @@ void main() async {
   );
   
   // Initialize notification service
-  await NotificationService.instance.initialize();
+  await NotificationService().initialize();
   
   runApp(
     MultiProvider(

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/notification.dart';
+import '../utils/platform_utils.dart';
 
 /// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
@@ -19,7 +20,14 @@ class NotificationService {
 
   /// Initialize FCM and request permissions
   Future<void> initialize() async {
-    // Request notification permissions
+    // Skip FCM initialization on web (use in-app notifications only)
+    if (PlatformUtils.isWeb) {
+      print('Running on web - FCM push notifications not fully supported');
+      print('Using in-app notification center only');
+      return;
+    }
+
+    // Request notification permissions (mobile only)
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -96,6 +104,8 @@ class NotificationService {
 
   /// Save FCM token to user document
   Future<void> saveFcmToken(String userId) async {
+    if (PlatformUtils.isWeb) return; // Skip on web
+    
     try {
       String? token = await _firebaseMessaging.getToken();
       if (token != null) {
@@ -112,6 +122,8 @@ class NotificationService {
 
   /// Delete FCM token on logout
   Future<void> deleteFcmToken(String userId) async {
+    if (PlatformUtils.isWeb) return; // Skip on web
+    
     try {
       await _firestore.collection('users').doc(userId).update({
         'fcmToken': FieldValue.delete(),

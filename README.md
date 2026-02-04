@@ -15,7 +15,7 @@ Make fundraising in Africa accessible, trustworthy, and effective by building pl
 - **Geography:** Ghana
 - **Users:** Individual campaign creators + donors (local & diaspora)
 - **Payments:** Paystack (Mobile Money + Cards)
-- **Platform:** Flutter (iOS + Android)
+- **Platform:** Flutter (iOS + Android + Web - see [WEB_COMPATIBILITY.md](WEB_COMPATIBILITY.md))
 - **Backend:** Firebase
 
 ---

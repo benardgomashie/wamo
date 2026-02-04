@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../app/constants.dart';
 import '../../app/theme.dart';
 import '../../app/routes.dart';
+import '../../core/utils/platform_utils.dart';
+import '../auth/phone_auth_screen.dart';
+import '../auth/email_auth_screen.dart';
+import '../dashboard/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,8 +27,39 @@ class _SplashScreenState extends State<SplashScreen> {
     // Wait for 2 seconds
     await Future.delayed(const Duration(seconds: 2));
     
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    if (!mounted) return;
+
+    // Check authentication status
+    final user = FirebaseAuth.instance.currentUser;
+    
+    if (user != null) {
+      // User is logged in, check if profile exists
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (userDoc.exists) {
+        // User has profile, go to dashboard
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        );
+      } else {
+        // Logged in but no profile, shouldn't happen but handle it
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, AppRoutes.home);
+      }
+    } else {
+      // Not logged in, go to appropriate auth screen
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => PlatformUtils.isWeb 
+              ? const EmailAuthScreen() 
+              : const PhoneAuthScreen(),
+        ),
+      );
     }
   }
 
