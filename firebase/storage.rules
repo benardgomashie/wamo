@@ -1,0 +1,59 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isValidImageSize() {
+      // Max 2MB
+      return request.resource.size < 2 * 1024 * 1024;
+    }
+    
+    function isValidImageType() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    // Campaign Proof Images
+    match /campaigns/proof/{userId}/{fileName} {
+      // Only owner can upload
+      allow create: if isSignedIn() && isOwner(userId) && isValidImageSize() && isValidImageType();
+      
+      // Anyone can read (for viewing campaigns)
+      allow read: if true;
+      
+      // Only owner can delete
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+    
+    // Campaign Update Images
+    match /campaigns/updates/{userId}/{fileName} {
+      // Only owner can upload
+      allow create: if isSignedIn() && isOwner(userId) && isValidImageSize() && isValidImageType();
+      
+      // Anyone can read
+      allow read: if true;
+      
+      // Only owner can delete
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+    
+    // User Profile Images
+    match /users/profiles/{userId}/{fileName} {
+      // Only owner can upload
+      allow create: if isSignedIn() && isOwner(userId) && isValidImageSize() && isValidImageType();
+      
+      // Anyone can read
+      allow read: if true;
+      
+      // Only owner can delete
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+  }
+}
