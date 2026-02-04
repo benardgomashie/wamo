@@ -159,24 +159,44 @@ cd firebase/functions
 npm install
 ```
 
-### 5. Environment Variables
+### 5. Paystack Configuration
 
-Create a `.env` file in the project root:
+#### Get Your Test API Keys
+1. Go to [Paystack Dashboard](https://dashboard.paystack.com/#/settings/developer)
+2. Copy your **Test Public Key** and **Test Secret Key**
+3. Update `lib/app/constants.dart` with your test public key (optional - default test key is already set)
 
-```env
-# Paystack
-PAYSTACK_TEST_SECRET_KEY=sk_test_xxxxx
-PAYSTACK_TEST_PUBLIC_KEY=pk_test_xxxxx
-PAYSTACK_LIVE_SECRET_KEY=sk_live_xxxxx
-PAYSTACK_LIVE_PUBLIC_KEY=pk_live_xxxxx
+#### Configure Firebase Functions
+```bash
+# Set Paystack secret key for Cloud Functions
+firebase functions:config:set paystack.secret_key="YOUR_PAYSTACK_SECRET_KEY"
 
-# Firebase
-FIREBASE_PROJECT_ID=wamo-dev
+# Verify configuration
+firebase functions:config:get
 ```
 
-**Never commit `.env` to Git!**
+**Current Test Keys (already configured):**
+- Public Key: `pk_test_7569b1d11aa4376124c69b17244e010b47526a2f`
+- Secret Key: `sk_test_af8737674f197fc295215be2270ced06d26f60cf`
 
-### 6. Run the App
+> ⚠️ **Important:** These are TEST keys only. Replace with production keys before going live.
+
+### 6. Environment Variables (Optional)
+
+You can override default test keys using environment variables:
+
+```bash
+# Create .env file (see .env.example)
+cp .env.example .env
+
+# Edit .env with your keys
+PAYSTACK_PUBLIC_KEY=pk_test_your_key_here
+PAYSTACK_SECRET_KEY=sk_test_your_key_here
+```
+
+**Never commit `.env` to Git!** (Already in .gitignore)
+
+### 7. Run the App
 
 ```bash
 # Check connected devices

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_paystack/flutter_paystack.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import '../../app/constants.dart';
 import '../models/campaign.dart';
+import '../utils/platform_utils.dart';
+
+// Conditional import - only import paystack on mobile
+import 'package:flutter_paystack_plus/flutter_paystack_plus.dart'
+    if (dart.library.html) '../stubs/flutter_paystack_stub.dart';
 
 class DonationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final PaystackPlugin _paystack = PaystackPlugin();
+  final PaystackPop _paystack = PaystackPop();
   final Uuid _uuid = const Uuid();
 
   /// Initialize Paystack with public key
@@ -101,26 +105,26 @@ class DonationService {
     // Convert to kobo (Paystack uses smallest currency unit)
     final amountInKobo = (totalAmount * 100).toInt();
 
-    // Create charge
-    final charge = Charge()
-      ..amount = amountInKobo
-      ..email = email
-      ..reference = reference
-      ..currency = 'GHS'
-      ..putMetaData('campaign_id', campaignId)
-      ..putMetaData('donation_amount', amount)
-      ..putMetaData('platform_fee', fees['platformFee'])
-      ..putMetaData('paystack_fee', fees['paystackFee'])
-      ..putMetaData('donor_name', isAnonymous ? 'Anonymous' : (donorName ?? 'Anonymous'))
-      ..putMetaData('donor_contact', donorContact ?? '')
-      ..putMetaData('message', message ?? '')
-      ..putMetaData('is_anonymous', isAnonymous);
+    // Create charge with metadata
+    final metadata = {
+      'campaign_id': campaignId,
+      'donation_amount': amount,
+      'platform_fee': fees['platformFee'],
+      'paystack_fee': fees['paystackFee'],
+      'donor_name': isAnonymous ? 'Anonymous' : (donorName ?? 'Anonymous'),
+      'donor_contact': donorContact ?? '',
+      'message': message ?? '',
+      'is_anonymous': isAnonymous,
+    };
 
-    // Process payment
-    final response = await _paystack.checkout(
+    // Process payment using PaystackPop
+    final response = await _paystack.chargeCard(
       context,
-      charge: charge,
-      method: CheckoutMethod.selectable, // Let user choose Mobile Money or Card
+      charge: Charge()
+        ..amount = amountInKobo
+        ..email = email
+        ..reference = reference
+        ..metadata = metadata,
     );
 
     if (response.status) {
@@ -153,16 +157,17 @@ class DonationService {
       ..amount = amountInKobo
       ..email = email
       ..reference = reference
-      ..currency = 'GHS'
       ..card = card
-      ..putMetaData('campaign_id', campaignId)
-      ..putMetaData('donation_amount', amount)
-      ..putMetaData('platform_fee', fees['platformFee'])
-      ..putMetaData('paystack_fee', fees['paystackFee'])
-      ..putMetaData('donor_name', isAnonymous ? 'Anonymous' : (donorName ?? 'Anonymous'))
-      ..putMetaData('donor_contact', donorContact ?? '')
-      ..putMetaData('message', message ?? '')
-      ..putMetaData('is_anonymous', isAnonymous);
+      ..metadata = {
+        'campaign_id': campaignId,
+        'donation_amount': amount,
+        'platform_fee': fees['platformFee'],
+        'paystack_fee': fees['paystackFee'],
+        'donor_name': isAnonymous ? 'Anonymous' : (donorName ?? 'Anonymous'),
+        'donor_contact': donorContact ?? '',
+        'message': message ?? '',
+        'is_anonymous': isAnonymous,
+      };
 
     final response = await _paystack.chargeCard(context, charge: charge);
 

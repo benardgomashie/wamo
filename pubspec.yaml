@@ -38,11 +38,11 @@ dependencies:
   uuid: ^4.3.3
 
   # HTTP & API
-  http: ^0.13.6
+  http: ^1.6.0
   dio: ^5.4.0
 
-  # Payments
-  flutter_paystack: ^1.0.7
+  # Payments (using maintained fork for Flutter 3.x compatibility)
+  flutter_paystack_plus: ^1.1.1
 
   # Icons
   cupertino_icons: ^1.0.6

@@ -1,28 +1,52 @@
-/// Stub file for flutter_paystack on web
-/// This file is used when flutter_paystack is not available (web platform)
+/// Stub file for flutter_paystack_plus on web
+/// This file is used when flutter_paystack_plus is not available (web platform)
 
-class PaystackPlugin {
+import 'package:flutter/material.dart';
+
+class PaystackPop {
   Future<void> initialize({required String publicKey}) async {
+    throw UnsupportedError('Paystack is not supported on web');
+  }
+
+  Future<CheckoutResponse> chargeCard(
+    BuildContext context, {
+    required Charge charge,
+  }) async {
     throw UnsupportedError('Paystack is not supported on web');
   }
 
   Future<CheckoutResponse> checkout(
     BuildContext context, {
     required Charge charge,
-    required CheckoutMethod method,
-    bool fullscreen = false,
+    CheckoutMethod? method,
   }) async {
     throw UnsupportedError('Paystack is not supported on web');
   }
 }
 
 class Charge {
+  int? amount;
   String? email;
-  double? amount;
   String? reference;
+  String? currency;
   Map<String, dynamic>? metadata;
+  PaymentCard? card;
 
   Charge();
+}
+
+class PaymentCard {
+  String? number;
+  String? cvc;
+  int? expiryMonth;
+  int? expiryYear;
+
+  PaymentCard({
+    this.number,
+    this.cvc,
+    this.expiryMonth,
+    this.expiryYear,
+  });
 }
 
 class CheckoutResponse {
@@ -37,6 +61,3 @@ enum CheckoutMethod {
   card,
   selectable,
 }
-
-// Stub for BuildContext (will use Flutter's actual BuildContext)
-typedef BuildContext = dynamic;

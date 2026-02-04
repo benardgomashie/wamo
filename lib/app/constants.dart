@@ -5,10 +5,15 @@ class AppConstants {
   static const String appMeaning = '"Wamo" means "help" in Ga';
   static const String appUrl = 'https://wamo.app';
   
-  // API Keys (loaded from environment)
+  // API Keys (Paystack TEST keys - DO NOT use in production)
   static const String paystackPublicKey = String.fromEnvironment(
     'PAYSTACK_PUBLIC_KEY',
-    defaultValue: 'pk_test_xxxxx', // Replace with actual test key
+    defaultValue: 'pk_test_7569b1d11aa4376124c69b17244e010b47526a2f',
+  );
+  
+  static const String paystackSecretKey = String.fromEnvironment(
+    'PAYSTACK_SECRET_KEY',
+    defaultValue: 'sk_test_af8737674f197fc295215be2270ced06d26f60cf',
   );
   
   // App Configuration
