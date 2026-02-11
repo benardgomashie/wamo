@@ -6,6 +6,7 @@ import '../features/auth/otp_verification_screen.dart';
 import '../features/auth/create_profile_screen.dart';
 import '../features/campaigns/create_campaign_screen.dart';
 import '../features/campaigns/campaign_detail_screen.dart';
+import '../features/campaigns/browse_campaigns_screen.dart';
 import '../features/donations/donate_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 
@@ -16,6 +17,7 @@ class AppRoutes {
   static const String phoneAuth = '/auth/phone';
   static const String otpVerification = '/auth/otp';
   static const String createProfile = '/auth/create-profile';
+  static const String browseCampaigns = '/campaigns/browse';
   static const String createCampaign = '/campaigns/create';
   static const String campaignDetail = '/campaigns/detail';
   static const String donate = '/donate';
@@ -50,6 +52,9 @@ class AppRoutes {
             phoneNumber: args?['phoneNumber'] ?? '',
           ),
         );
+        
+      case browseCampaigns:
+        return MaterialPageRoute(builder: (_) => const BrowseCampaignsScreen());
         
       case createCampaign:
         return MaterialPageRoute(builder: (_) => const CreateCampaignScreen());

@@ -4,9 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../app/constants.dart';
 import '../../app/theme.dart';
 import '../../app/routes.dart';
-import '../../core/utils/platform_utils.dart';
 import '../auth/phone_auth_screen.dart';
-import '../auth/email_auth_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -51,13 +49,11 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacementNamed(context, AppRoutes.home);
       }
     } else {
-      // Not logged in, go to appropriate auth screen
+      // Not logged in, go to phone auth screen (all platforms)
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => PlatformUtils.isWeb 
-              ? const EmailAuthScreen() 
-              : const PhoneAuthScreen(),
+          builder: (_) => const PhoneAuthScreen(),
         ),
       );
     }

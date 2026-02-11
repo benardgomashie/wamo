@@ -19,7 +19,8 @@ export const paystackWebhook = functions.https.onRequest(async (req, res) => {
 
     if (hash !== req.headers['x-paystack-signature']) {
       functions.logger.warn('Invalid Paystack signature');
-      return res.status(401).send('Invalid signature');
+      res.status(401).send('Invalid signature');
+      return;
     }
 
     const event = req.body;
@@ -40,10 +41,10 @@ export const paystackWebhook = functions.https.onRequest(async (req, res) => {
         functions.logger.info('Unhandled event type', { event: event.event });
     }
 
-    return res.status(200).send('Webhook processed');
+    res.status(200).send('Webhook processed');
   } catch (error) {
     functions.logger.error('Webhook processing error', error);
-    return res.status(500).send('Webhook processing failed');
+    res.status(500).send('Webhook processing failed');
   }
 });
 
@@ -111,7 +112,6 @@ async function handleSuccessfulCharge(data: any) {
  */
 async function handleSuccessfulTransfer(data: any) {
   const reference = data.reference;
-  const transferCode = data.transfer_code;
 
   // Find payout by transaction reference
   const payoutSnapshot = await db

@@ -3,15 +3,17 @@ import 'package:intl/intl.dart';
 import '../../core/models/notification.dart';
 import '../../core/services/notification_service.dart';
 import '../../app/theme.dart';
+import '../../widgets/wamo_empty_state.dart';
+import '../../widgets/wamo_toast.dart';
 
 class NotificationCenterScreen extends StatelessWidget {
   final String userId;
   final _notificationService = NotificationService();
 
   NotificationCenterScreen({
-    Key? key,
+    super.key,
     required this.userId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +28,7 @@ class NotificationCenterScreen extends StatelessWidget {
             onPressed: () async {
               await _notificationService.markAllAsRead(userId);
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('All notifications marked as read')),
-                );
+                WamoToast.success(context, 'All notifications marked as read');
               }
             },
           ),
@@ -57,9 +57,7 @@ class NotificationCenterScreen extends StatelessWidget {
                 if (confirmed == true && context.mounted) {
                   await _notificationService.deleteAllNotifications(userId);
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('All notifications cleared')),
-                    );
+                    WamoToast.success(context, 'All notifications cleared');
                   }
                 }
               }
@@ -107,32 +105,11 @@ class NotificationCenterScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_none,
-            size: 80,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No notifications yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'We\'ll notify you of important updates',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
+    return const Center(
+      child: WamoEmptyState(
+        icon: Icons.notifications_none,
+        title: 'No notifications yet',
+        message: 'We\'ll notify you of important updates',
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/payout_service.dart';
 import '../../app/theme.dart';
+import '../../widgets/wamo_toast.dart';
 
 class PayoutRequestScreen extends StatefulWidget {
   final String campaignId;
@@ -8,11 +9,11 @@ class PayoutRequestScreen extends StatefulWidget {
   final double platformFeeDeducted;
 
   const PayoutRequestScreen({
-    Key? key,
+    super.key,
     required this.campaignId,
     required this.availableAmount,
     required this.platformFeeDeducted,
-  }) : super(key: key);
+  });
 
   @override
   State<PayoutRequestScreen> createState() => _PayoutRequestScreenState();
@@ -69,18 +70,18 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                   color: AppTheme.infoColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'What happens next?',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const SizedBox(height: 8),
-                    const Text('1. Admin will review your request'),
-                    const Text('2. Approval typically takes 1-2 business days'),
-                    const Text('3. Once approved, funds transfer to your Mobile Money'),
-                    const Text('4. You\'ll receive SMS confirmation'),
+                    SizedBox(height: 8),
+                    Text('1. Admin will review your request'),
+                    Text('2. Approval typically takes 1-2 business days'),
+                    Text('3. Once approved, funds transfer to your Mobile Money'),
+                    Text('4. You\'ll receive SMS confirmation'),
                   ],
                 ),
               ),
@@ -100,12 +101,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to request payout: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      WamoToast.error(context, 'Failed to request payout: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -173,11 +169,11 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: AppTheme.warningColor),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.info_outline, color: AppTheme.warningColor),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Text(
                         'Ensure the Mobile Money number belongs to you. Incorrect numbers cannot be reversed.',
                         style: TextStyle(fontSize: 13),

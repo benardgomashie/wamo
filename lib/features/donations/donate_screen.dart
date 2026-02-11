@@ -6,6 +6,8 @@ import '../../app/constants.dart';
 import '../../core/models/campaign.dart';
 import '../../core/services/donation_service.dart';
 import '../../core/providers/user_provider.dart';
+import '../../core/utils/responsive_utils.dart';
+import '../../widgets/wamo_toast.dart';
 import 'payment_processing_screen.dart';
 
 class DonateScreen extends StatefulWidget {
@@ -53,10 +55,12 @@ class _DonateScreenState extends State<DonateScreen> {
   void _loadUserInfo() {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     if (userProvider.user != null) {
+      // Pre-fill if user is logged in (optional optimization)
       _nameController.text = userProvider.user!.name;
       _emailController.text = userProvider.user!.email ?? '';
       _phoneController.text = userProvider.user!.phone;
     }
+    // If not logged in, user can still donate as guest
   }
 
   void _selectAmount(double amount) {
@@ -96,17 +100,13 @@ class _DonateScreenState extends State<DonateScreen> {
     }
 
     if (_selectedAmount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select or enter a donation amount')),
-      );
+      WamoToast.warning(context, 'Please select or enter a donation amount');
       return;
     }
 
     final validationError = _donationService.validateAmount(_selectedAmount);
     if (validationError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationError)),
-      );
+      WamoToast.warning(context, validationError);
       return;
     }
 
@@ -124,7 +124,7 @@ class _DonateScreenState extends State<DonateScreen> {
         isAnonymous: _isAnonymous,
       );
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       // Navigate to processing screen
       Navigator.of(context).pushReplacement(
@@ -137,16 +137,11 @@ class _DonateScreenState extends State<DonateScreen> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!context.mounted) return;
       
       setState(() => _isLoading = false);
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      WamoToast.error(context, e.toString());
     }
   }
 
@@ -162,6 +157,136 @@ class _DonateScreenState extends State<DonateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ResponsiveBuilder(
+      builder: (context, deviceType, screenWidth) {
+        final isDesktop = deviceType == DeviceType.desktop;
+        
+        if (isDesktop) {
+          return _buildDesktopLayout();
+        } else {
+          return _buildMobileLayout();
+        }
+      },
+    );
+  }
+
+  /// Desktop layout - centered card modal style
+  Widget _buildDesktopLayout() {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor.withOpacity(0.95),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Container(
+            width: 520,
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withOpacity(0.05),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close),
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppTheme.surfaceColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Donate to Campaign',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              widget.campaign.title,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Form content
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Amount selection
+                        _buildAmountSelection(),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Fee breakdown
+                        if (_feeBreakdown != null) ...[
+                          _buildFeeBreakdown(),
+                          const SizedBox(height: 24),
+                        ],
+                        
+                        // Donor information
+                        _buildDonorInformation(),
+                        
+                        const SizedBox(height: 24),
+                        
+                        // Message (optional)
+                        _buildMessageField(),
+                        
+                        const SizedBox(height: 32),
+                        
+                        // Donate button
+                        _buildDonateButton(),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Security notice
+                        _buildSecurityNotice(),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Mobile layout - full screen
+  Widget _buildMobileLayout() {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Support Campaign'),
@@ -457,13 +582,17 @@ class _DonateScreenState extends State<DonateScreen> {
           decoration: const InputDecoration(
             labelText: 'Email',
             hintText: 'your@email.com',
+            helperText: 'For payment receipt only',
           ),
           validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'Email is required for payment receipt';
-            }
-            if (!value.contains('@')) {
+            // Email is now optional - phone can be used for receipt
+            if (value != null && value.trim().isNotEmpty && !value.contains('@')) {
               return 'Please enter a valid email';
+            }
+            // At least one contact method required (email or phone)
+            if ((value == null || value.trim().isEmpty) && 
+                (_phoneController.text.trim().isEmpty || _isAnonymous)) {
+              return 'Email or phone number required for receipt';
             }
             return null;
           },

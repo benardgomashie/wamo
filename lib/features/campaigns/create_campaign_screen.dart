@@ -6,6 +6,7 @@ import '../../app/constants.dart';
 import '../../core/providers/user_provider.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/campaign.dart';
+import '../../widgets/wamo_toast.dart';
 import 'widgets/image_picker_widget.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
@@ -141,17 +142,13 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         await _firestoreService.createCampaign(campaign);
       }
 
-      if (!mounted) return;
+      if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isDraft 
-                ? 'Campaign saved as draft' 
-                : 'Campaign submitted for review',
-          ),
-          backgroundColor: AppTheme.successColor,
-        ),
+      WamoToast.success(
+        context,
+        isDraft 
+            ? 'Campaign saved as draft' 
+            : 'Campaign submitted for review',
       );
 
       Navigator.pop(context);
@@ -163,12 +160,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppTheme.errorColor,
-      ),
-    );
+    WamoToast.error(context, message);
   }
 
   @override
@@ -243,7 +235,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
             // Campaign Cause
             DropdownButtonFormField<String>(
-              value: _selectedCause,
+              initialValue: _selectedCause,
               decoration: const InputDecoration(
                 labelText: 'Campaign Cause',
                 helperText: 'Select the category that best fits',
@@ -291,7 +283,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
             // Target Amount
             TextFormField(
               controller: _targetAmountController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Target Amount (GH₵)',
                 hintText: '5000.00',
                 helperText: 'Min: GH₵ ${AppConstants.minDonationAmount}, Max: GH₵ ${AppConstants.maxCampaignAmount}',
@@ -341,7 +333,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
             // Payout Method
             DropdownButtonFormField<String>(
-              value: _selectedPayoutMethod,
+              initialValue: _selectedPayoutMethod,
               decoration: const InputDecoration(
                 labelText: 'Payout Method',
                 helperText: 'How you want to receive funds',
@@ -417,15 +409,15 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(
                         Icons.info_outline,
                         color: AppTheme.primaryColor,
                         size: 20,
                       ),
-                      const SizedBox(width: AppTheme.spacingS),
-                      const Text(
+                      SizedBox(width: AppTheme.spacingS),
+                      Text(
                         'Important Information',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,

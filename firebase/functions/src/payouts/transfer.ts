@@ -343,7 +343,8 @@ export const paystackTransferWebhook = functions.https.onRequest(async (req, res
   const secret = PAYSTACK_SECRET_KEY;
 
   if (!hash || !secret) {
-    return res.status(401).send('Unauthorized');
+    res.status(401).send('Unauthorized');
+    return;
   }
 
   const crypto = require('crypto');
@@ -353,7 +354,8 @@ export const paystackTransferWebhook = functions.https.onRequest(async (req, res
     .digest('hex');
 
   if (hash !== expectedHash) {
-    return res.status(401).send('Invalid signature');
+    res.status(401).send('Invalid signature');
+    return;
   }
 
   const event = req.body;

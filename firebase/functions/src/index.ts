@@ -8,7 +8,7 @@ admin.initializeApp();
 export { paystackWebhook } from './webhooks/paystack';
 
 // Export campaign triggers
-export { onCampaignCreated, onDonationCreated } from './campaigns/triggers';
+export { onCampaignCreated } from './campaigns/triggers';
 
 // Export admin functions
 export {
@@ -18,6 +18,13 @@ export {
   getCampaignQueue,
   reportCampaign,
 } from './admin/campaigns';
+
+// Export verification functions
+export {
+  requestMoreInfo,
+  updateVerification,
+  detectRedFlags,
+} from './admin/verification';
 
 // Export payout functions
 export {

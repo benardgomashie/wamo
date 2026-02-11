@@ -1,5 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { createAuditLog } from '../utils/audit';
 
 const db = admin.firestore();
 
@@ -44,13 +45,14 @@ export const approveCampaign = functions.https.onCall(async (data, context) => {
       adminNotes: notes || null,
     });
 
-    // Log action
-    await db.collection('admin_logs').add({
+    // Create audit log
+    await createAuditLog({
       action: 'approve_campaign',
-      campaignId,
       adminId: context.auth.uid,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      notes: notes || null,
+      adminEmail: context.auth.token.email || 'unknown',
+      campaignId,
+      campaignTitle: campaign.title,
+      notes: notes || undefined,
     });
 
     // TODO: Send notification to campaign creator

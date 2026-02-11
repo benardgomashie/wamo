@@ -4,21 +4,25 @@ import 'package:uuid/uuid.dart';
 import '../../app/constants.dart';
 import '../models/campaign.dart';
 import '../utils/platform_utils.dart';
-
-// Conditional import - only import paystack on mobile
-import 'package:flutter_paystack_plus/flutter_paystack_plus.dart'
-    if (dart.library.html) '../stubs/flutter_paystack_stub.dart';
+import 'payment_service_interface.dart';
+import 'mobile_payment_service.dart';
+import 'web_payment_service.dart';
 
 class DonationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final PaystackPop _paystack = PaystackPop();
+  late final PaymentService _paymentService;
   final Uuid _uuid = const Uuid();
 
-  /// Initialize Paystack with public key
+  DonationService() {
+    // Initialize platform-specific payment service
+    _paymentService = PlatformUtils.isWeb
+        ? WebPaymentService()
+        : MobilePaymentService();
+  }
+
+  /// Initialize payment service (no longer needed for new architecture but kept for compatibility)
   Future<void> initialize() async {
-    await _paystack.initialize(
-      publicKey: AppConstants.paystackPublicKey,
-    );
+    // Platform services initialize themselves
   }
 
   /// Calculate fees for a donation amount
@@ -31,7 +35,7 @@ class DonationService {
     // Card: 1.5% + GHS 0.50 (capped at GHS 2,000)
     // Mobile Money: ~1.5% (varies by provider)
     // Using conservative estimate: 2%
-    final paystackFeePercent = 2.0;
+    const paystackFeePercent = 2.0;
     final paystackFee = donationAmount * (paystackFeePercent / 100);
 
     final totalAmount = donationAmount + platformFee + paystackFee;
@@ -99,82 +103,21 @@ class DonationService {
     final fees = calculateFees(amount);
     final totalAmount = fees['total']!;
 
-    // Generate transaction reference
-    final reference = 'wamo_${_uuid.v4().replaceAll('-', '').substring(0, 16)}';
-
-    // Convert to kobo (Paystack uses smallest currency unit)
-    final amountInKobo = (totalAmount * 100).toInt();
-
-    // Create charge with metadata
-    final metadata = {
-      'campaign_id': campaignId,
-      'donation_amount': amount,
-      'platform_fee': fees['platformFee'],
-      'paystack_fee': fees['paystackFee'],
-      'donor_name': isAnonymous ? 'Anonymous' : (donorName ?? 'Anonymous'),
-      'donor_contact': donorContact ?? '',
-      'message': message ?? '',
-      'is_anonymous': isAnonymous,
-    };
-
-    // Process payment using PaystackPop
-    final response = await _paystack.chargeCard(
-      context,
-      charge: Charge()
-        ..amount = amountInKobo
-        ..email = email
-        ..reference = reference
-        ..metadata = metadata,
+    // Process payment using platform-specific service
+    final result = await _paymentService.processDonation(
+      campaignId: campaignId,
+      amount: totalAmount,
+      email: email,
+      phone: donorContact,
+      donorName: isAnonymous ? null : donorName,
+      isAnonymous: isAnonymous,
+      context: context, // For mobile payment UI
     );
 
-    if (response.status) {
-      // Payment initiated successfully
-      // Note: Donation record will be created by webhook after verification
-      return reference;
+    if (result.isSuccess || result.isPending) {
+      return result.reference;
     } else {
-      throw Exception(response.message ?? 'Payment failed');
-    }
-  }
-
-  /// Charge card directly (alternative to checkout modal)
-  Future<String> chargeCard({
-    required BuildContext context,
-    required String campaignId,
-    required double amount,
-    required String email,
-    required PaymentCard card,
-    String? donorName,
-    String? donorContact,
-    String? message,
-    bool isAnonymous = false,
-  }) async {
-    final fees = calculateFees(amount);
-    final totalAmount = fees['total']!;
-    final reference = 'wamo_${_uuid.v4().replaceAll('-', '').substring(0, 16)}';
-    final amountInKobo = (totalAmount * 100).toInt();
-
-    final charge = Charge()
-      ..amount = amountInKobo
-      ..email = email
-      ..reference = reference
-      ..card = card
-      ..metadata = {
-        'campaign_id': campaignId,
-        'donation_amount': amount,
-        'platform_fee': fees['platformFee'],
-        'paystack_fee': fees['paystackFee'],
-        'donor_name': isAnonymous ? 'Anonymous' : (donorName ?? 'Anonymous'),
-        'donor_contact': donorContact ?? '',
-        'message': message ?? '',
-        'is_anonymous': isAnonymous,
-      };
-
-    final response = await _paystack.chargeCard(context, charge: charge);
-
-    if (response.status) {
-      return reference;
-    } else {
-      throw Exception(response.message ?? 'Card charge failed');
+      throw Exception(result.message ?? 'Payment failed');
     }
   }
 

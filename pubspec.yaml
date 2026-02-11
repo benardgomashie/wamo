@@ -56,6 +56,5 @@ flutter:
   uses-material-design: true
 
   # Assets
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - "ChatGPT Image Feb 11, 2026, 05_30_39 AM.png"

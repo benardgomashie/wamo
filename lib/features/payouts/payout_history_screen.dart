@@ -3,15 +3,16 @@ import 'package:intl/intl.dart';
 import '../../core/models/payout.dart';
 import '../../core/services/payout_service.dart';
 import '../../app/theme.dart';
+import '../../widgets/wamo_empty_state.dart';
 
 class PayoutHistoryScreen extends StatelessWidget {
   final String creatorId;
   final _payoutService = PayoutService();
 
   PayoutHistoryScreen({
-    Key? key,
+    super.key,
     required this.creatorId,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,32 +36,11 @@ class PayoutHistoryScreen extends StatelessWidget {
           final payouts = snapshot.data ?? [];
 
           if (payouts.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No payouts yet',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Your payout history will appear here',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
+            return const Center(
+              child: WamoEmptyState(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'No payouts yet',
+                message: 'Your payout history will appear here',
               ),
             );
           }

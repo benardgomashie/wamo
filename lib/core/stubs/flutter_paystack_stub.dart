@@ -1,5 +1,6 @@
 /// Stub file for flutter_paystack_plus on web
 /// This file is used when flutter_paystack_plus is not available (web platform)
+library;
 
 import 'package:flutter/material.dart';
 

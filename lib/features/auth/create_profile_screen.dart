@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../app/theme.dart';
 import '../../app/routes.dart';
 import '../../core/services/auth_service.dart';
+import '../../widgets/wamo_toast.dart';
 
 class CreateProfileScreen extends StatefulWidget {
   final String uid;
@@ -65,14 +66,9 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> {
         _isLoading = false;
       });
       
-      if (!mounted) return;
+      if (!context.mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error creating profile: ${e.toString()}'),
-          backgroundColor: AppTheme.errorColor,
-        ),
-      );
+      WamoToast.error(context, 'Error creating profile: ${e.toString()}');
     }
   }
 

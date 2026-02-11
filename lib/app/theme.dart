@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Colors
-  static const Color primaryColor = Color(0xFF2D5F3F); // Deep green - trust & growth
-  static const Color secondaryColor = Color(0xFFF59E0B); // Warm amber - hope & warmth
-  static const Color accentColor = Color(0xFF10B981); // Bright green - success
-  static const Color errorColor = Color(0xFFEF4444); // Red - errors
-  static const Color warningColor = Color(0xFFF59E0B); // Amber - warnings
-  static const Color successColor = Color(0xFF10B981); // Green - success
+  // Brand Colors (aligned with DESIGN_SYSTEM.md)
+  static const Color primaryColor = Color(0xFF2FA4A9); // Wamo Teal - trust & calm
+  static const Color secondaryColor = Color(0xFFF39C3D); // Wamo Orange - warmth & hope
+  static const Color accentColor = Color(0xFF3CB371); // Soft green - success
+  static const Color errorColor = Color(0xFFD9534F); // Muted red - errors only
+  static const Color warningColor = Color(0xFFF2B705); // Amber - warnings
+  static const Color successColor = Color(0xFF3CB371); // Soft green - success
   
-  // Neutral Colors
-  static const Color backgroundColor = Color(0xFFFAFAFA);
-  static const Color surfaceColor = Color(0xFFFFFFFF);
-  static const Color textPrimaryColor = Color(0xFF1F2937);
-  static const Color textSecondaryColor = Color(0xFF6B7280);
-  static const Color dividerColor = Color(0xFFE5E7EB);
-  static const Color infoColor = Color(0xFF3B82F6); // Blue - info
+  // Neutral Colors (aligned with DESIGN_SYSTEM.md)
+  static const Color backgroundColor = Color(0xFFF7F9FB); // color.bg.secondary
+  static const Color surfaceColor = Color(0xFFFFFFFF); // color.surface.card
+  static const Color textPrimaryColor = Color(0xFF1F2933); // color.text.primary
+  static const Color textSecondaryColor = Color(0xFF4B5563); // color.text.secondary
+  static const Color textMutedColor = Color(0xFF9CA3AF); // color.text.muted
+  static const Color dividerColor = Color(0xFFE5E7EB); // color.border.light
+  static const Color disabledColor = Color(0xFFE9ECEF); // color.surface.disabled
+  static const Color infoColor = Color(0xFF2FA4A9); // Same as primary for info states
   
   // Spacing Constants
   static const double paddingS = 8.0;
@@ -34,7 +36,6 @@ class AppTheme {
       secondary: secondaryColor,
       error: errorColor,
       surface: surfaceColor,
-      background: backgroundColor,
     ),
     
     appBarTheme: const AppBarTheme(
@@ -53,9 +54,10 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
+        minimumSize: const Size.fromHeight(48), // Accessibility: min 48px
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16), // radius.lg
         ),
         elevation: 0,
         textStyle: const TextStyle(
@@ -68,9 +70,10 @@ class AppTheme {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primaryColor,
+        minimumSize: const Size.fromHeight(48), // Accessibility: min 48px
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16), // radius.lg
         ),
         side: const BorderSide(color: primaryColor, width: 1.5),
         textStyle: const TextStyle(
@@ -95,30 +98,30 @@ class AppTheme {
       filled: true,
       fillColor: surfaceColor,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8), // radius.sm
         borderSide: const BorderSide(color: dividerColor),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8), // radius.sm
         borderSide: const BorderSide(color: dividerColor),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8), // radius.sm
         borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8), // radius.sm
         borderSide: const BorderSide(color: errorColor),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      hintStyle: const TextStyle(color: textSecondaryColor),
+      hintStyle: const TextStyle(color: textMutedColor),
     ),
     
     cardTheme: const CardThemeData(
       color: surfaceColor,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16)),
+        borderRadius: BorderRadius.all(Radius.circular(12)), // radius.md
         side: BorderSide(color: dividerColor, width: 1),
       ),
       margin: EdgeInsets.symmetric(vertical: 8),
@@ -130,7 +133,7 @@ class AppTheme {
       labelStyle: const TextStyle(color: textPrimaryColor),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(999), // radius.full (pills)
       ),
     ),
     
@@ -145,82 +148,187 @@ class AppTheme {
       space: 1,
     ),
     
+    // Typography aligned with DESIGN_SYSTEM.md type scale
     textTheme: const TextTheme(
-      displayLarge: TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.bold,
-        color: textPrimaryColor,
-      ),
-      displayMedium: TextStyle(
+      displaySmall: TextStyle( // Display: Screen headers
         fontSize: 28,
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
+        height: 36 / 28, // Line height 36px
         color: textPrimaryColor,
       ),
-      displaySmall: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
+      titleLarge: TextStyle( // Title: Section titles
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        height: 28 / 22, // Line height 28px
         color: textPrimaryColor,
       ),
-      headlineMedium: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryColor,
-      ),
-      headlineSmall: TextStyle(
+      titleMedium: TextStyle( // Subtitle: Card titles, highlights
         fontSize: 18,
         fontWeight: FontWeight.w600,
+        height: 24 / 18, // Line height 24px
         color: textPrimaryColor,
       ),
-      titleLarge: TextStyle(
+      bodyLarge: TextStyle( // Body: Default text
         fontSize: 16,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w400,
+        height: 24 / 16, // Line height 24px
         color: textPrimaryColor,
       ),
-      titleMedium: TextStyle(
+      bodyMedium: TextStyle( // Small: Secondary text, helper copy
         fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryColor,
-      ),
-      bodyLarge: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.normal,
-        color: textPrimaryColor,
-      ),
-      bodyMedium: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.normal,
-        color: textPrimaryColor,
-      ),
-      bodySmall: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.normal,
+        fontWeight: FontWeight.w400,
+        height: 20 / 14, // Line height 20px
         color: textSecondaryColor,
       ),
-      labelLarge: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: textPrimaryColor,
+      labelSmall: TextStyle( // Caption: Labels, metadata, timestamps
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        height: 16 / 12, // Line height 16px
+        color: textMutedColor,
       ),
     ),
   );
   
-  // Dark Theme
+  // Dark Theme (aligned with DESIGN_SYSTEM.md dark mode tokens)
+  static const Color darkPrimaryColor = Color(0xFF3FBFC4); // Softened teal for dark
+  static const Color darkSecondaryColor = Color(0xFFF6B15A); // Softened orange for dark
+  static const Color darkSuccessColor = Color(0xFF4FD1A5);
+  static const Color darkWarningColor = Color(0x00facc15);
+  static const Color darkErrorColor = Color(0xFFF87171); // Muted error for dark
+  static const Color darkBackgroundColor = Color(0xFF0F172A); // color.bg.primary.dark
+  static const Color darkSurfaceColor = Color(0xFF1F2933); // color.surface.card.dark
+  static const Color darkTextPrimaryColor = Color(0xFFF9FAFB); // color.text.primary.dark
+  static const Color darkTextSecondaryColor = Color(0xFFD1D5DB); // color.text.secondary.dark
+  static const Color darkTextMutedColor = Color(0xFF9CA3AF); // color.text.muted.dark
+  static const Color darkDividerColor = Color(0xFF374151); // color.border.light.dark
+  static const Color darkDisabledColor = Color(0xFF374151); // color.surface.disabled.dark
+
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    primaryColor: primaryColor,
-    scaffoldBackgroundColor: const Color(0xFF111827),
+    primaryColor: darkPrimaryColor,
+    scaffoldBackgroundColor: darkBackgroundColor,
     
     colorScheme: const ColorScheme.dark(
-      primary: primaryColor,
-      secondary: secondaryColor,
-      error: errorColor,
-      surface: Color(0xFF1F2937),
-      background: Color(0xFF111827),
+      primary: darkPrimaryColor,
+      secondary: darkSecondaryColor,
+      error: darkErrorColor,
+      surface: darkSurfaceColor,
     ),
     
-    // Similar structure to light theme but with dark colors
-    // Add dark theme customizations here if needed
+    appBarTheme: const AppBarTheme(
+      backgroundColor: darkSurfaceColor,
+      foregroundColor: darkTextPrimaryColor,
+      elevation: 0,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        color: darkTextPrimaryColor,
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: darkPrimaryColor,
+        foregroundColor: darkBackgroundColor, // Inverted for contrast
+        minimumSize: const Size.fromHeight(48),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 0,
+      ),
+    ),
+    
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: darkPrimaryColor,
+        minimumSize: const Size.fromHeight(48),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        side: const BorderSide(color: darkPrimaryColor, width: 1.5),
+      ),
+    ),
+    
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: darkSurfaceColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: darkDividerColor),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: darkDividerColor),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: darkPrimaryColor, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: darkErrorColor),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      hintStyle: const TextStyle(color: darkTextMutedColor),
+    ),
+    
+    cardTheme: const CardThemeData(
+      color: darkSurfaceColor,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        side: BorderSide(color: darkDividerColor, width: 1),
+      ),
+      margin: EdgeInsets.symmetric(vertical: 8),
+    ),
+    
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: darkPrimaryColor,
+      linearTrackColor: darkDisabledColor,
+    ),
+    
+    textTheme: const TextTheme(
+      displaySmall: TextStyle(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        height: 36 / 28,
+        color: darkTextPrimaryColor,
+      ),
+      titleLarge: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        height: 28 / 22,
+        color: darkTextPrimaryColor,
+      ),
+      titleMedium: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        height: 24 / 18,
+        color: darkTextPrimaryColor,
+      ),
+      bodyLarge: TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        height: 24 / 16,
+        color: darkTextPrimaryColor,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        height: 20 / 14,
+        color: darkTextSecondaryColor,
+      ),
+      labelSmall: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        height: 16 / 12,
+        color: darkTextMutedColor,
+      ),
+    ),
   );
   
   // Spacing
