@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/notification.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../../app/theme.dart';
 import '../../widgets/wamo_empty_state.dart';
 import '../../widgets/wamo_toast.dart';
@@ -9,6 +10,7 @@ import '../../widgets/wamo_toast.dart';
 class NotificationCenterScreen extends StatelessWidget {
   final String userId;
   final _notificationService = NotificationService();
+  static const String _logScope = 'NotificationCenterScreen';
 
   NotificationCenterScreen({
     super.key,
@@ -40,7 +42,8 @@ class NotificationCenterScreen extends StatelessWidget {
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Clear All Notifications'),
-                    content: const Text('Are you sure you want to delete all notifications?'),
+                    content: const Text(
+                        'Are you sure you want to delete all notifications?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
@@ -114,7 +117,8 @@ class NotificationCenterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationTile(BuildContext context, AppNotification notification) {
+  Widget _buildNotificationTile(
+      BuildContext context, AppNotification notification) {
     return Dismissible(
       key: Key(notification.id),
       direction: DismissDirection.endToStart,
@@ -133,14 +137,16 @@ class NotificationCenterScreen extends StatelessWidget {
         },
         child: Container(
           padding: const EdgeInsets.all(16),
-          color: notification.isRead ? Colors.white : Colors.blue[50],
+          color: notification.isRead
+              ? Theme.of(context).cardColor
+              : Theme.of(context).primaryColor.withOpacity(0.1),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Icon
               _buildNotificationIcon(notification.type),
               const SizedBox(width: 12),
-              
+
               // Content
               Expanded(
                 child: Column(
@@ -150,7 +156,9 @@ class NotificationCenterScreen extends StatelessWidget {
                       notification.title,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
+                        fontWeight: notification.isRead
+                            ? FontWeight.normal
+                            : FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -172,7 +180,7 @@ class NotificationCenterScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               // Unread indicator
               if (!notification.isRead)
                 Container(
@@ -264,7 +272,8 @@ class NotificationCenterScreen extends StatelessWidget {
     }
   }
 
-  void _handleNotificationTap(BuildContext context, AppNotification notification) {
+  void _handleNotificationTap(
+      BuildContext context, AppNotification notification) {
     // Mark as read
     if (!notification.isRead) {
       _notificationService.markAsRead(notification.id);
@@ -273,8 +282,8 @@ class NotificationCenterScreen extends StatelessWidget {
     // Navigate to relevant screen based on action URL
     if (notification.actionUrl != null) {
       // TODO: Implement deep linking navigation
-      print('Navigate to: ${notification.actionUrl}');
-      
+      AppLogger.info(_logScope, 'Navigate to: ${notification.actionUrl}');
+
       // For now, show a snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Navigate to: ${notification.actionUrl}')),

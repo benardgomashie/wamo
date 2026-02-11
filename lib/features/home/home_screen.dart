@@ -70,19 +70,17 @@ class HomeScreen extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.favorite,
-                  color: AppTheme.secondaryColor,
-                  size: 30,
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'wamo',
-                  style: TextStyle(
-                    fontSize: 40 / 1.6,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimaryColor,
-                  ),
+                Image.asset(
+                  'assets/images/wamo_logo.png',
+                  height: 40,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.favorite,
+                      color: AppTheme.secondaryColor,
+                      size: 30,
+                    );
+                  },
                 ),
               ],
             ),
@@ -137,7 +135,19 @@ class HomeScreen extends StatelessWidget {
     }
     
     return AppBar(
-      title: const Text(AppConstants.appName),
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/wamo_logo.png',
+            height: 32,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) {
+              return const Text(AppConstants.appName);
+            },
+          ),
+        ],
+      ),
     );
   }
 

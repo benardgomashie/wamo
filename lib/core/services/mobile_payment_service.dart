@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../../app/constants.dart';
+import '../utils/app_logger.dart';
 import 'payment_service_interface.dart';
 
 /// Mobile payment service using Paystack Payment Links for iOS/Android
 /// Uses same approach as web to ensure consistency
 class MobilePaymentService implements PaymentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _logScope = 'MobilePaymentService';
 
   @override
   Future<PaymentResult> processDonation({
@@ -40,7 +41,8 @@ class MobilePaymentService implements PaymentService {
           'email': email,
           'reference': reference,
           'currency': 'GHS',
-          'callback_url': '${AppConstants.appUrl}/payment/verify?reference=$reference',
+          'callback_url':
+              '${AppConstants.appUrl}/payment/verify?reference=$reference',
           'metadata': {
             'campaign_id': campaignId,
             'donor_name': donorName ?? 'Anonymous',
@@ -54,7 +56,7 @@ class MobilePaymentService implements PaymentService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['status'] == true) {
           final authorizationUrl = data['data']['authorization_url'];
           final accessCode = data['data']['access_code'];
@@ -76,7 +78,7 @@ class MobilePaymentService implements PaymentService {
           final uri = Uri.parse(authorizationUrl);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
-            
+
             return PaymentResult(
               reference: reference,
               status: 'pending',
@@ -122,7 +124,7 @@ class MobilePaymentService implements PaymentService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['status'] == true) {
           final transactionData = data['data'];
           final status = transactionData['status'];
@@ -198,7 +200,8 @@ class MobilePaymentService implements PaymentService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      debugPrint('Error saving donation record: $e');
+      AppLogger.error(
+          _logScope, 'Error saving donation record for ref=$reference', e);
     }
   }
 
@@ -228,7 +231,8 @@ class MobilePaymentService implements PaymentService {
         }
       }
     } catch (e) {
-      debugPrint('Error updating donation status: $e');
+      AppLogger.error(
+          _logScope, 'Error updating donation status for ref=$reference', e);
     }
   }
 

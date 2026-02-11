@@ -1,15 +1,16 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../app/constants.dart';
+import '../utils/app_logger.dart';
 import 'payment_service_interface.dart';
 
 /// Web payment service using Paystack Payment Links (redirect flow)
 /// User is redirected to Paystack hosted page to complete payment
 class WebPaymentService implements PaymentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _logScope = 'WebPaymentService';
 
   @override
   Future<PaymentResult> processDonation({
@@ -40,7 +41,8 @@ class WebPaymentService implements PaymentService {
           'email': email,
           'reference': reference,
           'currency': 'GHS',
-          'callback_url': '${AppConstants.appUrl}/payment/verify?reference=$reference',
+          'callback_url':
+              '${AppConstants.appUrl}/payment/verify?reference=$reference',
           'metadata': {
             'campaign_id': campaignId,
             'donor_name': donorName ?? 'Anonymous',
@@ -53,7 +55,7 @@ class WebPaymentService implements PaymentService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['status'] == true) {
           final authorizationUrl = data['data']['authorization_url'];
           final accessCode = data['data']['access_code'];
@@ -75,7 +77,7 @@ class WebPaymentService implements PaymentService {
           final uri = Uri.parse(authorizationUrl);
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
-            
+
             return PaymentResult(
               reference: reference,
               status: 'pending',
@@ -121,10 +123,11 @@ class WebPaymentService implements PaymentService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
+
         if (data['status'] == true) {
           final transactionData = data['data'];
-          final status = transactionData['status']; // success, failed, abandoned
+          final status =
+              transactionData['status']; // success, failed, abandoned
           final amount = (transactionData['amount'] ?? 0) / 100;
           final currency = transactionData['currency'] ?? 'GHS';
           final paidAt = transactionData['paid_at'] != null
@@ -197,7 +200,8 @@ class WebPaymentService implements PaymentService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      debugPrint('Error saving donation record: $e');
+      AppLogger.error(
+          _logScope, 'Error saving donation record for ref=$reference', e);
     }
   }
 
@@ -227,7 +231,8 @@ class WebPaymentService implements PaymentService {
         }
       }
     } catch (e) {
-      debugPrint('Error updating donation status: $e');
+      AppLogger.error(
+          _logScope, 'Error updating donation status for ref=$reference', e);
     }
   }
 

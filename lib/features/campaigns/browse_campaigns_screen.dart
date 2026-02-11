@@ -3,6 +3,7 @@ import '../../app/theme.dart';
 import '../../app/routes.dart';
 import '../../core/models/campaign.dart';
 import '../../core/services/firestore_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/responsive_utils.dart';
 import '../../widgets/wamo_empty_state.dart';
 
@@ -15,6 +16,7 @@ class BrowseCampaignsScreen extends StatefulWidget {
 
 class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  static const String _logScope = 'BrowseCampaignsScreen';
   String _selectedCategory = 'all';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -78,7 +80,8 @@ class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
             height: 50,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
               children: [
                 _buildCategoryChip('all', 'All'),
                 _buildCategoryChip('medical', 'Medical'),
@@ -97,18 +100,20 @@ class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
             child: StreamBuilder<List<Campaign>>(
               stream: _selectedCategory == 'all'
                   ? _firestoreService.getCampaignsStream(status: 'active')
-                  : _firestoreService.getCampaignsStream(status: 'active', cause: _selectedCategory),
+                  : _firestoreService.getCampaignsStream(
+                      status: 'active', cause: _selectedCategory),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
                 if (snapshot.hasError) {
-                  // Log full error to console for debugging (e.g., Firestore index URLs)
-                  debugPrint('======== FIRESTORE ERROR ========');
-                  debugPrint('Error: ${snapshot.error}');
-                  debugPrint('Stack trace: ${snapshot.stackTrace}');
-                  debugPrint('=================================');
+                  AppLogger.error(
+                    _logScope,
+                    'Campaign stream error.',
+                    snapshot.error,
+                    snapshot.stackTrace,
+                  );
                   return Center(
                     child: Text('Error: ${snapshot.error}'),
                   );
@@ -127,7 +132,9 @@ class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
                 // Apply search filter
                 if (_searchQuery.isNotEmpty) {
                   campaigns = campaigns.where((campaign) {
-                    return campaign.title.toLowerCase().contains(_searchQuery) ||
+                    return campaign.title
+                            .toLowerCase()
+                            .contains(_searchQuery) ||
                         campaign.story.toLowerCase().contains(_searchQuery);
                   }).toList();
                 }
@@ -152,7 +159,8 @@ class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
                       );
                     }
                     // Desktop/Tablet: Use grid layout
-                    final crossAxisCount = deviceType == DeviceType.desktop ? 3 : 2;
+                    final crossAxisCount =
+                        deviceType == DeviceType.desktop ? 3 : 2;
                     return GridView.builder(
                       padding: const EdgeInsets.all(AppTheme.spacingM),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -188,10 +196,14 @@ class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
             _selectedCategory = value;
           });
         },
-        backgroundColor: Colors.grey.shade200,
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+            ? Colors.grey.shade800
+            : Colors.grey.shade200,
         selectedColor: AppTheme.primaryColor,
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : Colors.black87,
+          color: isSelected
+              ? Colors.white
+              : Theme.of(context).textTheme.bodyLarge?.color,
           fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         ),
       ),
@@ -380,13 +392,15 @@ class _BrowseCampaignsScreenState extends State<BrowseCampaignsScreen> {
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: Colors.grey.shade300,
-                            child: const Icon(Icons.image_not_supported, size: 48),
+                            child:
+                                const Icon(Icons.image_not_supported, size: 48),
                           );
                         },
                       )
                     : Container(
                         color: Colors.grey.shade300,
-                        child: const Icon(Icons.campaign, size: 48, color: Colors.grey),
+                        child: const Icon(Icons.campaign,
+                            size: 48, color: Colors.grey),
                       ),
               ),
 

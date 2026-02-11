@@ -208,7 +208,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
                     },
                     selectedColor: AppTheme.primaryColor,
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
+                      color: isSelected ? Colors.white : Theme.of(context).textTheme.bodyLarge?.color,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   );
@@ -307,7 +307,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
           style: TextStyle(
             fontSize: isHighlight ? 18 : 14,
             fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
-            color: isDeduction ? Colors.red[700] : Colors.black87,
+            color: isDeduction ? AppTheme.errorColor : AppTheme.textPrimaryColor,
           ),
         ),
         Text(
@@ -315,7 +315,7 @@ class _PayoutRequestScreenState extends State<PayoutRequestScreen> {
           style: TextStyle(
             fontSize: isHighlight ? 20 : 14,
             fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
-            color: isHighlight ? AppTheme.primaryColor : (isDeduction ? Colors.red[700] : Colors.black87),
+            color: isHighlight ? AppTheme.primaryColor : (isDeduction ? AppTheme.errorColor : AppTheme.textPrimaryColor),
           ),
         ),
       ],

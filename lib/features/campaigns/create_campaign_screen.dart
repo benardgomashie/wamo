@@ -11,7 +11,7 @@ import 'widgets/image_picker_widget.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
   final String? campaignId; // For editing existing campaign
-  
+
   const CreateCampaignScreen({
     super.key,
     this.campaignId,
@@ -27,9 +27,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
   final _storyController = TextEditingController();
   final _targetAmountController = TextEditingController();
   final _payoutDetailsController = TextEditingController();
-  
+
   final FirestoreService _firestoreService = FirestoreService();
-  
+
   String _selectedCause = AppConstants.campaignCauses.first;
   String _selectedPayoutMethod = 'mobile_money';
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
@@ -57,10 +57,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
   Future<void> _loadCampaign() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final campaign = await _firestoreService.getCampaign(widget.campaignId!);
-      
+
       if (campaign != null) {
         setState(() {
           _titleController.text = campaign.title;
@@ -88,7 +88,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       lastDate: DateTime.now().add(const Duration(days: 90)),
       helpText: 'Select Campaign End Date',
     );
-    
+
     if (picked != null && picked != _endDate) {
       setState(() {
         _endDate = picked;
@@ -146,9 +146,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
       WamoToast.success(
         context,
-        isDraft 
-            ? 'Campaign saved as draft' 
-            : 'Campaign submitted for review',
+        isDraft ? 'Campaign saved as draft' : 'Campaign submitted for review',
       );
 
       Navigator.pop(context);
@@ -178,301 +176,317 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Campaign' : 'Create Campaign'),
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(AppTheme.spacingM),
-          children: [
-            // Verification warning
-            if (user?.verificationStatus != 'verified')
-              Container(
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 840),
+            child: Form(
+              key: _formKey,
+              child: ListView(
                 padding: const EdgeInsets.all(AppTheme.spacingM),
-                margin: const EdgeInsets.only(bottom: AppTheme.spacingL),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.orange.shade700),
-                    const SizedBox(width: AppTheme.spacingM),
-                    Expanded(
-                      child: Text(
-                        'Your account needs verification before campaigns can go live',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange.shade800,
-                        ),
+                children: [
+                  // Verification warning
+                  if (user?.verificationStatus != 'verified')
+                    Container(
+                      padding: const EdgeInsets.all(AppTheme.spacingM),
+                      margin: const EdgeInsets.only(bottom: AppTheme.spacingL),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              color: Colors.orange.shade700),
+                          const SizedBox(width: AppTheme.spacingM),
+                          Expanded(
+                            child: Text(
+                              'Your account needs verification before campaigns can go live',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.orange.shade800,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
 
-            // Campaign Title
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: 'Campaign Title',
-                hintText: 'e.g., Help Save My Sister\'s Life',
-                helperText: 'Make it clear and compelling',
-              ),
-              textCapitalization: TextCapitalization.sentences,
-              maxLength: 100,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a campaign title';
-                }
-                if (value.trim().length < 10) {
-                  return 'Title must be at least 10 characters';
-                }
-                return null;
-              },
-            ),
+                  // Campaign Title
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Campaign Title',
+                      hintText: 'e.g., Help Save My Sister\'s Life',
+                      helperText: 'Make it clear and compelling',
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    maxLength: 100,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter a campaign title';
+                      }
+                      if (value.trim().length < 10) {
+                        return 'Title must be at least 10 characters';
+                      }
+                      return null;
+                    },
+                  ),
 
-            const SizedBox(height: AppTheme.spacingL),
+                  const SizedBox(height: AppTheme.spacingL),
 
-            // Campaign Cause
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCause,
-              decoration: const InputDecoration(
-                labelText: 'Campaign Cause',
-                helperText: 'Select the category that best fits',
-              ),
-              items: AppConstants.campaignCauses.map((cause) {
-                return DropdownMenuItem(
-                  value: cause,
-                  child: Text(cause),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _selectedCause = value);
-                }
-              },
-            ),
+                  // Campaign Cause
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCause,
+                    decoration: const InputDecoration(
+                      labelText: 'Campaign Cause',
+                      helperText: 'Select the category that best fits',
+                    ),
+                    items: AppConstants.campaignCauses.map((cause) {
+                      return DropdownMenuItem(
+                        value: cause,
+                        child: Text(cause),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedCause = value);
+                      }
+                    },
+                  ),
 
-            const SizedBox(height: AppTheme.spacingL),
+                  const SizedBox(height: AppTheme.spacingL),
 
-            // Campaign Story
-            TextFormField(
-              controller: _storyController,
-              decoration: const InputDecoration(
-                labelText: 'Your Story',
-                hintText: 'Explain why you need help and how funds will be used...',
-                helperText: 'Be detailed and honest',
-                alignLabelWithHint: true,
-              ),
-              maxLines: 8,
-              maxLength: 2000,
-              textCapitalization: TextCapitalization.sentences,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please tell your story';
-                }
-                if (value.trim().length < 100) {
-                  return 'Story must be at least 100 characters';
-                }
-                return null;
-              },
-            ),
+                  // Campaign Story
+                  TextFormField(
+                    controller: _storyController,
+                    decoration: const InputDecoration(
+                      labelText: 'Your Story',
+                      hintText:
+                          'Explain why you need help and how funds will be used...',
+                      helperText: 'Be detailed and honest',
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 8,
+                    maxLength: 2000,
+                    textCapitalization: TextCapitalization.sentences,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please tell your story';
+                      }
+                      if (value.trim().length < 100) {
+                        return 'Story must be at least 100 characters';
+                      }
+                      return null;
+                    },
+                  ),
 
-            const SizedBox(height: AppTheme.spacingL),
+                  const SizedBox(height: AppTheme.spacingL),
 
-            // Target Amount
-            TextFormField(
-              controller: _targetAmountController,
-              decoration: const InputDecoration(
-                labelText: 'Target Amount (GH₵)',
-                hintText: '5000.00',
-                helperText: 'Min: GH₵ ${AppConstants.minDonationAmount}, Max: GH₵ ${AppConstants.maxCampaignAmount}',
-                prefixText: 'GH₵ ',
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter target amount';
-                }
-                final amount = double.tryParse(value);
-                if (amount == null) {
-                  return 'Please enter a valid amount';
-                }
-                if (amount < AppConstants.minDonationAmount) {
-                  return 'Minimum amount is GH₵ ${AppConstants.minDonationAmount}';
-                }
-                if (amount > AppConstants.maxCampaignAmount) {
-                  return 'Maximum amount is GH₵ ${AppConstants.maxCampaignAmount}';
-                }
-                return null;
-              },
-            ),
+                  // Target Amount
+                  TextFormField(
+                    controller: _targetAmountController,
+                    decoration: const InputDecoration(
+                      labelText: 'Target Amount (GH₵)',
+                      hintText: '5000.00',
+                      helperText:
+                          'Min: GH₵ ${AppConstants.minDonationAmount}, Max: GH₵ ${AppConstants.maxCampaignAmount}',
+                      prefixText: 'GH₵ ',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d+\.?\d{0,2}')),
+                    ],
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter target amount';
+                      }
+                      final amount = double.tryParse(value);
+                      if (amount == null) {
+                        return 'Please enter a valid amount';
+                      }
+                      if (amount < AppConstants.minDonationAmount) {
+                        return 'Minimum amount is GH₵ ${AppConstants.minDonationAmount}';
+                      }
+                      if (amount > AppConstants.maxCampaignAmount) {
+                        return 'Maximum amount is GH₵ ${AppConstants.maxCampaignAmount}';
+                      }
+                      return null;
+                    },
+                  ),
 
-            const SizedBox(height: AppTheme.spacingL),
+                  const SizedBox(height: AppTheme.spacingL),
 
-            // End Date
-            InkWell(
-              onTap: _selectEndDate,
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Campaign End Date',
-                  helperText: 'Maximum 90 days from today',
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                child: Text(
-                  '${_endDate.day}/${_endDate.month}/${_endDate.year}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Payout Method
-            DropdownButtonFormField<String>(
-              initialValue: _selectedPayoutMethod,
-              decoration: const InputDecoration(
-                labelText: 'Payout Method',
-                helperText: 'How you want to receive funds',
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'mobile_money',
-                  child: Text('Mobile Money'),
-                ),
-                DropdownMenuItem(
-                  value: 'bank',
-                  child: Text('Bank Account'),
-                ),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedPayoutMethod = value;
-                    _payoutDetailsController.clear();
-                  });
-                }
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-
-            // Payout Details
-            TextFormField(
-              controller: _payoutDetailsController,
-              decoration: InputDecoration(
-                labelText: _selectedPayoutMethod == 'mobile_money'
-                    ? 'Mobile Money Number'
-                    : 'Bank Account Details',
-                hintText: _selectedPayoutMethod == 'mobile_money'
-                    ? '0241234567'
-                    : 'Account Number and Bank Name',
-                helperText: 'Funds will be sent here after campaign ends',
-              ),
-              keyboardType: _selectedPayoutMethod == 'mobile_money'
-                  ? TextInputType.phone
-                  : TextInputType.text,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter payout details';
-                }
-                return null;
-              },
-            ),
-
-            const SizedBox(height: AppTheme.spacingXL),
-
-            // Image Upload
-            ImagePickerWidget(
-              initialImages: _proofImageUrls,
-              onImagesChanged: (urls) {
-                setState(() {
-                  _proofImageUrls = urls;
-                });
-              },
-              maxImages: 5,
-              uploadPath: 'campaigns/${user?.id ?? 'temp'}',
-            ),
-
-            const SizedBox(height: AppTheme.spacingXL),
-
-            // Info box
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacingM),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppTheme.radiusM),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: AppTheme.primaryColor,
-                        size: 20,
+                  // End Date
+                  InkWell(
+                    onTap: _selectEndDate,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Campaign End Date',
+                        helperText: 'Maximum 90 days from today',
+                        suffixIcon: Icon(Icons.calendar_today),
                       ),
-                      SizedBox(width: AppTheme.spacingS),
-                      Text(
-                        'Important Information',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
+                      child: Text(
+                        '${_endDate.day}/${_endDate.month}/${_endDate.year}',
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingL),
+
+                  // Payout Method
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedPayoutMethod,
+                    decoration: const InputDecoration(
+                      labelText: 'Payout Method',
+                      helperText: 'How you want to receive funds',
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'mobile_money',
+                        child: Text('Mobile Money'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'bank',
+                        child: Text('Bank Account'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedPayoutMethod = value;
+                          _payoutDetailsController.clear();
+                        });
+                      }
+                    },
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingL),
+
+                  // Payout Details
+                  TextFormField(
+                    controller: _payoutDetailsController,
+                    decoration: InputDecoration(
+                      labelText: _selectedPayoutMethod == 'mobile_money'
+                          ? 'Mobile Money Number'
+                          : 'Bank Account Details',
+                      hintText: _selectedPayoutMethod == 'mobile_money'
+                          ? '0241234567'
+                          : 'Account Number and Bank Name',
+                      helperText: 'Funds will be sent here after campaign ends',
+                    ),
+                    keyboardType: _selectedPayoutMethod == 'mobile_money'
+                        ? TextInputType.phone
+                        : TextInputType.text,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter payout details';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingXL),
+
+                  // Image Upload
+                  ImagePickerWidget(
+                    initialImages: _proofImageUrls,
+                    onImagesChanged: (urls) {
+                      setState(() {
+                        _proofImageUrls = urls;
+                      });
+                    },
+                    maxImages: 5,
+                    uploadPath: 'campaigns/${user?.id ?? 'temp'}',
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingXL),
+
+                  // Info box
+                  Container(
+                    padding: const EdgeInsets.all(AppTheme.spacingM),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: AppTheme.primaryColor,
+                              size: 20,
+                            ),
+                            SizedBox(width: AppTheme.spacingS),
+                            Text(
+                              'Important Information',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppTheme.spacingS),
+                        Text(
+                          '• Platform fee: ${AppConstants.platformFeePercentage}% (paid by donors)\n'
+                          '• Campaigns are reviewed before going live\n'
+                          '• Upload proof documents to increase trust\n'
+                          '• Be honest and transparent in your story',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade700,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingXL),
+
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () => _saveCampaign(isDraft: true),
+                          child: const Text('Save as Draft'),
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.spacingM),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () => _saveCampaign(isDraft: false),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white),
+                                  ),
+                                )
+                              : const Text('Submit for Review'),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppTheme.spacingS),
-                  Text(
-                    '• Platform fee: ${AppConstants.platformFeePercentage}% (paid by donors)\n'
-                    '• Campaigns are reviewed before going live\n'
-                    '• Upload proof documents to increase trust\n'
-                    '• Be honest and transparent in your story',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade700,
-                      height: 1.5,
-                    ),
-                  ),
+
+                  const SizedBox(height: AppTheme.spacingL),
                 ],
               ),
             ),
-
-            const SizedBox(height: AppTheme.spacingXL),
-
-            // Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _isLoading ? null : () => _saveCampaign(isDraft: true),
-                    child: const Text('Save as Draft'),
-                  ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _isLoading ? null : () => _saveCampaign(isDraft: false),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text('Submit for Review'),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: AppTheme.spacingL),
-          ],
+          ),
         ),
       ),
     );

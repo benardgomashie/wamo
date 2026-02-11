@@ -1,18 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/notification.dart';
+import '../utils/app_logger.dart';
 import '../utils/platform_utils.dart';
 
 /// Background message handler (must be top-level function)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Background message received: ${message.messageId}');
+  AppLogger.info('NotificationService',
+      'Background message received: ${message.messageId}');
   // Handle background notification here
 }
 
 class NotificationService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _logScope = 'NotificationService';
 
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
@@ -22,8 +25,9 @@ class NotificationService {
   Future<void> initialize() async {
     // Skip FCM initialization on web (use in-app notifications only)
     if (PlatformUtils.isWeb) {
-      print('Running on web - FCM push notifications not fully supported');
-      print('Using in-app notification center only');
+      AppLogger.info(_logScope,
+          'Running on web - FCM push notifications not fully supported');
+      AppLogger.info(_logScope, 'Using in-app notification center only');
       return;
     }
 
@@ -36,18 +40,18 @@ class NotificationService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      print('User granted notification permission');
-      
+      AppLogger.info(_logScope, 'User granted notification permission');
+
       // Get FCM token
       String? token = await _firebaseMessaging.getToken();
       if (token != null) {
-        print('FCM Token: $token');
+        AppLogger.info(_logScope, 'FCM token acquired.');
         // Save token to Firestore (will be done after user authentication)
       }
 
       // Listen for token refresh
       _firebaseMessaging.onTokenRefresh.listen((newToken) {
-        print('FCM Token refreshed: $newToken');
+        AppLogger.info(_logScope, 'FCM token refreshed.');
         // Update token in Firestore
       });
 
@@ -65,19 +69,21 @@ class NotificationService {
       FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
       // Check if app was opened from a notification
-      RemoteMessage? initialMessage = await _firebaseMessaging.getInitialMessage();
+      RemoteMessage? initialMessage =
+          await _firebaseMessaging.getInitialMessage();
       if (initialMessage != null) {
         _handleNotificationTap(initialMessage);
       }
     } else {
-      print('User declined notification permission');
+      AppLogger.warn(_logScope, 'User declined notification permission');
     }
   }
 
   /// Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
-    print('Foreground message: ${message.notification?.title}');
-    
+    AppLogger.info(
+        _logScope, 'Foreground message: ${message.notification?.title}');
+
     // Create in-app notification
     if (message.data.isNotEmpty) {
       _createInAppNotification(
@@ -92,20 +98,20 @@ class NotificationService {
 
   /// Handle notification tap (app opened from background)
   void _handleNotificationTap(RemoteMessage message) {
-    print('Notification tapped: ${message.data}');
-    
+    AppLogger.info(_logScope, 'Notification tapped. data=${message.data}');
+
     // Navigate to relevant screen based on data
     String? actionUrl = message.data['actionUrl'];
     if (actionUrl != null) {
       // TODO: Implement deep linking navigation
-      print('Navigate to: $actionUrl');
+      AppLogger.info(_logScope, 'Navigate to: $actionUrl');
     }
   }
 
   /// Save FCM token to user document
   Future<void> saveFcmToken(String userId) async {
     if (PlatformUtils.isWeb) return; // Skip on web
-    
+
     try {
       String? token = await _firebaseMessaging.getToken();
       if (token != null) {
@@ -113,25 +119,26 @@ class NotificationService {
           'fcmToken': token,
           'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
         });
-        print('FCM token saved for user: $userId');
+        AppLogger.info(_logScope, 'FCM token saved for user: $userId');
       }
     } catch (e) {
-      print('Error saving FCM token: $e');
+      AppLogger.error(_logScope, 'Error saving FCM token for user: $userId', e);
     }
   }
 
   /// Delete FCM token on logout
   Future<void> deleteFcmToken(String userId) async {
     if (PlatformUtils.isWeb) return; // Skip on web
-    
+
     try {
       await _firestore.collection('users').doc(userId).update({
         'fcmToken': FieldValue.delete(),
       });
       await _firebaseMessaging.deleteToken();
-      print('FCM token deleted for user: $userId');
+      AppLogger.info(_logScope, 'FCM token deleted for user: $userId');
     } catch (e) {
-      print('Error deleting FCM token: $e');
+      AppLogger.error(
+          _logScope, 'Error deleting FCM token for user: $userId', e);
     }
   }
 
@@ -155,12 +162,14 @@ class NotificationService {
         'actionUrl': data?['actionUrl'],
       });
     } catch (e) {
-      print('Error creating in-app notification: $e');
+      AppLogger.error(
+          _logScope, 'Error creating in-app notification for user: $userId', e);
     }
   }
 
   /// Get user notifications stream
-  Stream<List<AppNotification>> getUserNotifications(String userId, {int limit = 50}) {
+  Stream<List<AppNotification>> getUserNotifications(String userId,
+      {int limit = 50}) {
     return _firestore
         .collection('notifications')
         .where('userId', isEqualTo: userId)
@@ -179,7 +188,8 @@ class NotificationService {
         'isRead': true,
       });
     } catch (e) {
-      print('Error marking notification as read: $e');
+      AppLogger.error(
+          _logScope, 'Error marking notification as read: $notificationId', e);
     }
   }
 
@@ -199,7 +209,8 @@ class NotificationService {
 
       await batch.commit();
     } catch (e) {
-      print('Error marking all notifications as read: $e');
+      AppLogger.error(_logScope,
+          'Error marking all notifications as read for user: $userId', e);
     }
   }
 
@@ -218,7 +229,8 @@ class NotificationService {
     try {
       await _firestore.collection('notifications').doc(notificationId).delete();
     } catch (e) {
-      print('Error deleting notification: $e');
+      AppLogger.error(
+          _logScope, 'Error deleting notification: $notificationId', e);
     }
   }
 
@@ -237,7 +249,8 @@ class NotificationService {
 
       await batch.commit();
     } catch (e) {
-      print('Error deleting all notifications: $e');
+      AppLogger.error(
+          _logScope, 'Error deleting all notifications for user: $userId', e);
     }
   }
 
@@ -245,9 +258,9 @@ class NotificationService {
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
-      print('Subscribed to topic: $topic');
+      AppLogger.info(_logScope, 'Subscribed to topic: $topic');
     } catch (e) {
-      print('Error subscribing to topic: $e');
+      AppLogger.error(_logScope, 'Error subscribing to topic: $topic', e);
     }
   }
 
@@ -255,9 +268,9 @@ class NotificationService {
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      print('Unsubscribed from topic: $topic');
+      AppLogger.info(_logScope, 'Unsubscribed from topic: $topic');
     } catch (e) {
-      print('Error unsubscribing from topic: $e');
+      AppLogger.error(_logScope, 'Error unsubscribing from topic: $topic', e);
     }
   }
 }

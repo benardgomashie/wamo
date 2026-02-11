@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../features/splash/splash_screen.dart';
-import '../features/home/home_screen.dart';
 import '../features/auth/phone_auth_screen.dart';
 import '../features/auth/otp_verification_screen.dart';
 import '../features/auth/create_profile_screen.dart';
@@ -9,6 +8,9 @@ import '../features/campaigns/campaign_detail_screen.dart';
 import '../features/campaigns/browse_campaigns_screen.dart';
 import '../features/donations/donate_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
+import '../features/payouts/payout_history_screen.dart';
+import '../features/notifications/notification_center_screen.dart';
+import '../core/widgets/auth_wrapper.dart';
 
 class AppRoutes {
   // Route Names
@@ -22,6 +24,8 @@ class AppRoutes {
   static const String campaignDetail = '/campaigns/detail';
   static const String donate = '/donate';
   static const String dashboard = '/dashboard';
+  static const String payoutHistory = '/payouts/history';
+  static const String notifications = '/notifications';
   
   // Route Generator
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -30,7 +34,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
         
       case home:
-        return MaterialPageRoute(builder: (_) => const HomeScreen());
+        return MaterialPageRoute(builder: (_) => const AuthWrapper());
         
       case phoneAuth:
         return MaterialPageRoute(builder: (_) => const PhoneAuthScreen());
@@ -83,6 +87,12 @@ class AppRoutes {
         
       case dashboard:
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
+        
+      case payoutHistory:
+        return MaterialPageRoute(builder: (_) => const PayoutHistoryScreen());
+        
+      case notifications:
+        return MaterialPageRoute(builder: (_) => const NotificationCenterScreen());
         
       default:
         return MaterialPageRoute(

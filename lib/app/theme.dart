@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Colors (aligned with DESIGN_SYSTEM.md)
-  static const Color primaryColor = Color(0xFF2FA4A9); // Wamo Teal - trust & calm
-  static const Color secondaryColor = Color(0xFFF39C3D); // Wamo Orange - warmth & hope
-  static const Color accentColor = Color(0xFF3CB371); // Soft green - success
-  static const Color errorColor = Color(0xFFD9534F); // Muted red - errors only
-  static const Color warningColor = Color(0xFFF2B705); // Amber - warnings
-  static const Color successColor = Color(0xFF3CB371); // Soft green - success
+  // Brand Colors (mockup-aligned palette)
+  static const Color primaryColor = Color(0xFF1F3655); // Navy - headings, links
+  static const Color secondaryColor = Color(0xFFF26A21); // Orange - primary CTA
+  static const Color accentColor = Color(0xFF2A86C7); // Blue - progress, accents
+  static const Color errorColor = Color(0xFFD9534F); // Errors
+  static const Color warningColor = Color(0xFFF2B705); // Warnings
+  static const Color successColor = Color(0xFF2E9B64); // Success
   
   // Neutral Colors (aligned with DESIGN_SYSTEM.md)
-  static const Color backgroundColor = Color(0xFFF7F9FB); // color.bg.secondary
+  static const Color backgroundColor = Color(0xFFF3F5F8); // mockup page background
   static const Color surfaceColor = Color(0xFFFFFFFF); // color.surface.card
-  static const Color textPrimaryColor = Color(0xFF1F2933); // color.text.primary
-  static const Color textSecondaryColor = Color(0xFF4B5563); // color.text.secondary
+  static const Color textPrimaryColor = Color(0xFF1F3655); // mockup heading/nav text
+  static const Color textSecondaryColor = Color(0xFF3C5674); // mockup body text
   static const Color textMutedColor = Color(0xFF9CA3AF); // color.text.muted
-  static const Color dividerColor = Color(0xFFE5E7EB); // color.border.light
+  static const Color dividerColor = Color(0xFFDCE2EA); // mockup border/divider
   static const Color disabledColor = Color(0xFFE9ECEF); // color.surface.disabled
-  static const Color infoColor = Color(0xFF2FA4A9); // Same as primary for info states
+  static const Color infoColor = Color(0xFF2A86C7); // Blue info tone
   
   // Spacing Constants
   static const double paddingS = 8.0;
@@ -52,7 +52,7 @@ class AppTheme {
     
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor,
+        backgroundColor: secondaryColor,
         foregroundColor: Colors.white,
         minimumSize: const Size.fromHeight(48), // Accessibility: min 48px
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -189,9 +189,9 @@ class AppTheme {
     ),
   );
   
-  // Dark Theme (aligned with DESIGN_SYSTEM.md dark mode tokens)
-  static const Color darkPrimaryColor = Color(0xFF3FBFC4); // Softened teal for dark
-  static const Color darkSecondaryColor = Color(0xFFF6B15A); // Softened orange for dark
+  // Dark Theme (kept compatible with updated light palette)
+  static const Color darkPrimaryColor = Color(0xFF7BA6D9);
+  static const Color darkSecondaryColor = Color(0xFFFF9A63);
   static const Color darkSuccessColor = Color(0xFF4FD1A5);
   static const Color darkWarningColor = Color(0x00facc15);
   static const Color darkErrorColor = Color(0xFFF87171); // Muted error for dark

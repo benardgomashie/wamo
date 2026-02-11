@@ -5,6 +5,7 @@ import '../../app/routes.dart';
 import '../../core/providers/user_provider.dart';
 import '../../core/services/firestore_service.dart';
 import '../../core/models/campaign.dart';
+import '../../core/utils/app_logger.dart';
 import '../../core/utils/responsive_utils.dart';
 import '../../core/widgets/web_widgets.dart';
 import '../../widgets/wamo_empty_state.dart';
@@ -18,9 +19,11 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  static const String _logScope = 'DashboardScreen';
   Map<String, dynamic>? _stats;
   bool _isLoadingStats = true;
   int _selectedNavIndex = 0;
+  String? _lastLoadedUserId; // Track which user we loaded stats for
 
   @override
   void initState() {
@@ -28,16 +31,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _loadStats();
   }
 
-  Future<void> _loadStats() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload stats if user has changed
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = userProvider.currentUser;
     
-    if (user != null) {
-      final stats = await _firestoreService.getUserStats(user.id);
-      setState(() {
-        _stats = stats;
-        _isLoadingStats = false;
-      });
+    if (user != null && user.id != _lastLoadedUserId) {
+      debugPrint('[DashboardScreen] User changed, reloading stats. newUserId=${user.id}');
+      _loadStats();
+    }
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final user = userProvider.currentUser;
+
+      if (user != null) {
+        debugPrint('[DashboardScreen] Loading stats for user: ${user.id}');
+        final stats = await _firestoreService.getUserStats(user.id);
+        if (mounted) {
+          setState(() {
+            _stats = stats;
+            _isLoadingStats = false;
+            _lastLoadedUserId = user.id; // Track which user we loaded
+          });
+        }
+        debugPrint('[DashboardScreen] Stats loaded successfully');
+      } else {
+        debugPrint('[DashboardScreen] User is null, setting default stats');
+        if (mounted) {
+          setState(() {
+            _stats = {
+              'total_campaigns': 0,
+              'active_campaigns': 0,
+              'total_raised': 0.0,
+              'total_donated': 0.0,
+              'total_donations': 0,
+            };
+            _isLoadingStats = false;
+            _lastLoadedUserId = null;
+          });
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('[DashboardScreen] Error loading stats: $e');
+      debugPrint('[DashboardScreen] Stack trace: $stackTrace');
+      // Set default stats on error
+      if (mounted) {
+        setState(() {
+          _stats = {
+            'total_campaigns': 0,
+            'active_campaigns': 0,
+            'total_raised': 0.0,
+            'total_donated': 0.0,
+            'total_donations': 0,
+          };
+          _isLoadingStats = false;
+        });
+      }
     }
   }
 
@@ -55,7 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return ResponsiveBuilder(
       builder: (context, deviceType, screenWidth) {
         final isDesktop = deviceType == DeviceType.desktop;
-        
+
         if (isDesktop) {
           return _buildDesktopLayout(user, userProvider);
         } else {
@@ -72,7 +126,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           // Sidebar
           _buildSidebar(user, userProvider),
-          
+
           // Main content
           Expanded(
             child: Container(
@@ -81,14 +135,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   // Top bar
                   _buildDesktopTopBar(user),
-                  
+
                   // Content area
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.all(32),
                       child: MaxWidthContainer(
                         maxWidth: 1000,
-                        child: _buildDashboardContent(user),
+                        child: _buildSelectedContent(user),
                       ),
                     ),
                   ),
@@ -147,9 +201,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // Navigation items
           Expanded(
             child: ListView(
@@ -181,21 +235,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   selectedIcon: Icons.account_balance_wallet,
                   label: 'Payouts',
                   isSelected: _selectedNavIndex == 3,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.payoutHistory);
+                  },
                 ),
                 SidebarItem(
                   icon: Icons.notifications_outlined,
                   selectedIcon: Icons.notifications,
                   label: 'Notifications',
                   isSelected: _selectedNavIndex == 4,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.pushNamed(context, AppRoutes.notifications);
+                  },
                 ),
               ],
             ),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // User profile section at bottom
           Container(
             padding: const EdgeInsets.all(16),
@@ -290,11 +348,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           MouseRegion(
             cursor: SystemMouseCursors.click,
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.createCampaign),
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.createCampaign),
               icon: const Icon(Icons.add, size: 20),
               label: const Text('New Campaign'),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               ),
             ),
           ),
@@ -352,9 +412,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              
+
               const SizedBox(height: AppTheme.spacingS),
-              
+
               // Verification status
               if (user.verificationStatus != 'verified')
                 Container(
@@ -392,9 +452,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                 ),
-              
+
               const SizedBox(height: AppTheme.spacingL),
-              
+
               // Statistics cards
               if (_isLoadingStats)
                 const Center(child: CircularProgressIndicator())
@@ -420,9 +480,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ],
                 ),
-                
                 const SizedBox(height: AppTheme.spacingM),
-                
                 Row(
                   children: [
                     Expanded(
@@ -445,9 +503,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ],
-              
+
               const SizedBox(height: AppTheme.spacingXL),
-              
+
               // My Campaigns section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -467,9 +525,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: AppTheme.spacingM),
-              
+
               // Campaigns list
               StreamBuilder<List<Campaign>>(
                 stream: _firestoreService.getCampaignsStream(
@@ -477,14 +535,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   limit: 5,
                 ),
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Check for errors (e.g., missing Firestore indexes)
+                  if (snapshot.hasError) {
+                    AppLogger.error(
+                      _logScope,
+                      'Campaign stream error (mobile cards).',
+                      snapshot.error,
+                      snapshot.stackTrace,
+                    );
+                    return _buildEmptyCampaigns();
+                  }
+
+                  // Show loading only on initial wait, not when active
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  
+
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return _buildEmptyCampaigns();
                   }
-                  
+
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -506,6 +577,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
         },
         icon: const Icon(Icons.add),
         label: const Text('New Campaign'),
+      ),
+    );
+  }
+
+  /// Switch content based on selected sidebar item
+  Widget _buildSelectedContent(dynamic user) {
+    switch (_selectedNavIndex) {
+      case 0:
+        return _buildDashboardContent(user);
+      case 1:
+        return _buildMyCampaignsContent(user);
+      case 2:
+        return _buildUpdatesContent(user);
+      default:
+        return _buildDashboardContent(user);
+    }
+  }
+
+  /// My Campaigns tab content
+  Widget _buildMyCampaignsContent(dynamic user) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'My Campaigns',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        StreamBuilder<List<Campaign>>(
+          stream: _firestoreService.getCampaignsStream(
+            creatorId: user.id,
+            limit: 50,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              debugPrint('❌ My campaigns stream error: ${snapshot.error}');
+              return _buildEmptyCampaigns();
+            }
+            
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return _buildEmptyCampaigns();
+            }
+            
+            return _buildDesktopCampaignsTable(snapshot.data!);
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Updates tab content (placeholder for now)
+  Widget _buildUpdatesContent(dynamic user) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.update_outlined, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 16),
+          Text(
+            'Campaign Updates',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Post updates feature coming soon',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ],
       ),
     );
   }
@@ -553,16 +704,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-        
+
         // Statistics cards - use grid layout for desktop
         if (_isLoadingStats)
           const Center(child: CircularProgressIndicator())
         else if (_stats != null) ...[
           _buildDesktopStatsGrid(),
         ],
-        
+
         const SizedBox(height: 32),
-        
+
         // My Campaigns section
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -582,9 +733,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Campaigns list/table
         StreamBuilder<List<Campaign>>(
           stream: _firestoreService.getCampaignsStream(
@@ -592,14 +743,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
             limit: 10,
           ),
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            // Check for errors (e.g., missing Firestore indexes)
+            if (snapshot.hasError) {
+              AppLogger.error(
+                _logScope,
+                'Campaign stream error (desktop table).',
+                snapshot.error,
+                snapshot.stackTrace,
+              );
+              return _buildEmptyCampaigns();
+            }
+
+            // Show loading only on initial wait, not when active
+            if (snapshot.connectionState == ConnectionState.waiting &&
+                !snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }
-            
+
             if (!snapshot.hasData || snapshot.data!.isEmpty) {
               return _buildEmptyCampaigns();
             }
-            
+
             return _buildDesktopCampaignsTable(snapshot.data!);
           },
         ),
@@ -649,7 +813,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildDesktopStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildDesktopStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -709,14 +874,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: AppTheme.backgroundColor,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
-                const Expanded(flex: 3, child: Text('Campaign', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                const Expanded(flex: 1, child: Text('Status', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                const Expanded(flex: 2, child: Text('Progress', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                const SizedBox(width: 80, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                const Expanded(
+                    flex: 3,
+                    child: Text('Campaign',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13))),
+                const Expanded(
+                    flex: 1,
+                    child: Text('Status',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13))),
+                const Expanded(
+                    flex: 2,
+                    child: Text('Progress',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13))),
+                const SizedBox(
+                    width: 80,
+                    child: Text('Actions',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13))),
               ],
             ),
           ),
@@ -742,7 +924,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: AppTheme.dividerColor.withOpacity(0.5))),
+            border: Border(
+                bottom:
+                    BorderSide(color: AppTheme.dividerColor.withOpacity(0.5))),
           ),
           child: Row(
             children: [
@@ -773,7 +957,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'GH₵ ${campaign.raisedAmount.toStringAsFixed(0)} / ${campaign.targetAmount.toStringAsFixed(0)}',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -804,7 +989,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -843,7 +1029,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       message: 'Create your first campaign to start raising funds',
       actionLabel: 'Start a Campaign',
       onAction: () {
-        Navigator.pushNamed(context, '/create_campaign');
+        Navigator.pushNamed(context, AppRoutes.createCampaign);
       },
     );
   }
@@ -881,22 +1067,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildStatusChip(campaign.status),
                 ],
               ),
-              
+
               const SizedBox(height: AppTheme.spacingS),
-              
+
               // Progress bar
               LinearProgressIndicator(
                 value: campaign.progressPercentage / 100,
                 backgroundColor: Colors.grey.shade200,
                 valueColor: AlwaysStoppedAnimation(
-                  campaign.isGoalReached 
-                      ? AppTheme.successColor 
+                  campaign.isGoalReached
+                      ? AppTheme.successColor
                       : AppTheme.primaryColor,
                 ),
               ),
-              
+
               const SizedBox(height: AppTheme.spacingS),
-              
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -927,7 +1113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStatusChip(String status) {
     Color color;
     String label;
-    
+
     switch (status) {
       case 'active':
         color = AppTheme.successColor;
@@ -949,7 +1135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         color = Colors.grey;
         label = status;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppTheme.spacingS,

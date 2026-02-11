@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.wamo.app"
+        applicationId = "com.banditor.wamo"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = 1

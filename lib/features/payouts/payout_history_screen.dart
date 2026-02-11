@@ -327,7 +327,7 @@ class PayoutHistoryScreen extends StatelessWidget {
             value,
             style: TextStyle(
               fontSize: 14,
-              color: isError ? Colors.red[700] : Colors.black87,
+              color: isError ? AppTheme.errorColor : AppTheme.textPrimaryColor,
             ),
           ),
         ],

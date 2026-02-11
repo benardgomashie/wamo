@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart';
+import '../utils/app_logger.dart';
 
 class StorageService {
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final ImagePicker _picker = ImagePicker();
+  static const String _logScope = 'StorageService';
 
   /// Pick image from gallery
   Future<XFile?> pickImageFromGallery() async {
@@ -18,7 +19,7 @@ class StorageService {
       );
       return image;
     } catch (e) {
-      debugPrint('Error picking image from gallery: $e');
+      AppLogger.error(_logScope, 'Error picking image from gallery.', e);
       return null;
     }
   }
@@ -34,7 +35,7 @@ class StorageService {
       );
       return image;
     } catch (e) {
-      debugPrint('Error picking image from camera: $e');
+      AppLogger.error(_logScope, 'Error picking image from camera.', e);
       return null;
     }
   }
@@ -47,14 +48,14 @@ class StorageService {
         maxHeight: 1920,
         imageQuality: 85,
       );
-      
+
       if (images.length > maxImages) {
         return images.sublist(0, maxImages);
       }
-      
+
       return images;
     } catch (e) {
-      debugPrint('Error picking multiple images: $e');
+      AppLogger.error(_logScope, 'Error picking multiple images.', e);
       return null;
     }
   }
@@ -67,7 +68,7 @@ class StorageService {
   }) async {
     try {
       final File file = File(filePath);
-      
+
       // Check file size (max 2MB)
       final int fileSize = await file.length();
       if (fileSize > 2 * 1024 * 1024) {
@@ -80,19 +81,21 @@ class StorageService {
       // Listen to upload progress
       if (onProgress != null) {
         uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
-          final double progress = snapshot.bytesTransferred / snapshot.totalBytes;
+          final double progress =
+              snapshot.bytesTransferred / snapshot.totalBytes;
           onProgress(progress);
         });
       }
 
       // Wait for upload to complete
       final TaskSnapshot snapshot = await uploadTask;
-      
+
       // Get download URL
       final String downloadUrl = await snapshot.ref.getDownloadURL();
       return downloadUrl;
     } catch (e) {
-      debugPrint('Error uploading image: $e');
+      AppLogger.error(
+          _logScope, 'Error uploading image to storagePath=$storagePath', e);
       rethrow;
     }
   }
@@ -107,7 +110,8 @@ class StorageService {
 
     for (int i = 0; i < filePaths.length; i++) {
       final String filePath = filePaths[i];
-      final String fileName = 'image_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+      final String fileName =
+          'image_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
       final String storagePath = '$folderPath/$fileName';
 
       try {
@@ -125,7 +129,7 @@ class StorageService {
           downloadUrls.add(url);
         }
       } catch (e) {
-        debugPrint('Error uploading image $i: $e');
+        AppLogger.error(_logScope, 'Error uploading image index=$i', e);
         // Continue with other images even if one fails
       }
     }
@@ -139,7 +143,7 @@ class StorageService {
       final Reference ref = _storage.refFromURL(imageUrl);
       await ref.delete();
     } catch (e) {
-      debugPrint('Error deleting image: $e');
+      AppLogger.error(_logScope, 'Error deleting image.', e);
       rethrow;
     }
   }
@@ -150,7 +154,7 @@ class StorageService {
       try {
         await deleteImage(url);
       } catch (e) {
-        debugPrint('Error deleting image $url: $e');
+        AppLogger.error(_logScope, 'Error deleting image url=$url', e);
         // Continue with other images
       }
     }

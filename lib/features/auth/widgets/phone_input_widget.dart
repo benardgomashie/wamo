@@ -22,6 +22,7 @@ class _PhoneInputWidgetState extends State<PhoneInputWidget> {
   String _selectedCountryCode = '+233'; // Ghana default
   
   final List<Map<String, String>> _countryCodes = [
+    {'code': '+1', 'country': 'United States', 'flag': '🇺🇸'},
     {'code': '+233', 'country': 'Ghana', 'flag': '🇬🇭'},
     {'code': '+234', 'country': 'Nigeria', 'flag': '🇳🇬'},
     {'code': '+254', 'country': 'Kenya', 'flag': '🇰🇪'},
