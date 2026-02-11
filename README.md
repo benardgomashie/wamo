@@ -175,11 +175,7 @@ firebase functions:config:set paystack.secret_key="YOUR_PAYSTACK_SECRET_KEY"
 firebase functions:config:get
 ```
 
-**Current Test Keys (already configured):**
-- Public Key: `pk_test_7569b1d11aa4376124c69b17244e010b47526a2f`
-- Secret Key: `sk_test_af8737674f197fc295215be2270ced06d26f60cf`
-
-> ⚠️ **Important:** These are TEST keys only. Replace with production keys before going live.
+> ⚠️ **Important:** Get your test keys from [Paystack Dashboard](https://dashboard.paystack.com/#/settings/developer) and configure them in environment variables. Never commit API keys to the repository!
 
 ### 6. Environment Variables (Optional)
 
