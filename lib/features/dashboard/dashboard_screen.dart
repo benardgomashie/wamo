@@ -212,6 +212,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           const Divider(height: 1),
 
+          // New Campaign button
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton.icon(
+              onPressed: () =>
+                  Navigator.pushNamed(context, AppRoutes.createCampaign),
+              icon: const Icon(Icons.add),
+              label: const Text('New Campaign'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          ),
+
+          const Divider(height: 1),
+
           // Navigation items
           Expanded(
             child: ListView(
@@ -353,25 +370,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            'Welcome back, ${user.name}!',
-            style: const TextStyle(
-              fontSize: 16,
-              color: AppTheme.textSecondaryColor,
+          Flexible(
+            child: Text(
+              'Welcome back, ${user.name}!',
+              style: const TextStyle(
+                fontSize: 16,
+                color: AppTheme.textSecondaryColor,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           const Spacer(),
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: ElevatedButton.icon(
-              onPressed: () =>
-                  Navigator.pushNamed(context, AppRoutes.createCampaign),
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('New Campaign'),
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
+          ElevatedButton.icon(
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.createCampaign),
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('New Campaign'),
+            style: ElevatedButton.styleFrom(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              elevation: 2,
             ),
           ),
         ],
