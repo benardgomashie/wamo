@@ -89,17 +89,35 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     try {
       final campaign = await _firestoreService.getCampaign(widget.campaignId!);
       if (campaign != null) {
+        // Temporarily remove listeners to prevent triggering _onFieldChanged during load
+        _titleController.removeListener(_onFieldChanged);
+        _storyController.removeListener(_onFieldChanged);
+        _targetAmountController.removeListener(_onFieldChanged);
+        _payoutDetailsController.removeListener(_onFieldChanged);
+        
         setState(() {
-          _titleController.text = campaign.title;
+          // Don't load "Untitled Campaign" placeholder
+          _titleController.text = campaign.title == 'Untitled Campaign' 
+              ? '' 
+              : campaign.title;
           _storyController.text = campaign.story;
           _targetAmountController.text =
-              campaign.targetAmount.toStringAsFixed(2);
+              campaign.targetAmount > 0
+                  ? campaign.targetAmount.toStringAsFixed(2)
+                  : '';
           _selectedCause = campaign.cause;
           _endDate = campaign.endDate;
           _selectedPayoutMethod = campaign.payoutMethod;
           _payoutDetailsController.text = campaign.payoutDetails;
           _proofImageUrls = campaign.proofUrls;
+          _hasUnsavedChanges = false;  // Mark as saved after loading
         });
+        
+        // Re-add listeners after loading is complete
+        _titleController.addListener(_onFieldChanged);
+        _storyController.addListener(_onFieldChanged);
+        _targetAmountController.addListener(_onFieldChanged);
+        _payoutDetailsController.addListener(_onFieldChanged);
       }
     } catch (e) {
       _showError('Failed to load campaign: $e');

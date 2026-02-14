@@ -61,7 +61,11 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const BrowseCampaignsScreen());
         
       case createCampaign:
-        return MaterialPageRoute(builder: (_) => const CreateCampaignScreen());
+        final args = settings.arguments as Map<String, dynamic>?;
+        final campaignId = args?['campaignId'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => CreateCampaignScreen(campaignId: campaignId),
+        );
         
       case campaignDetail:
         final args = settings.arguments as Map<String, dynamic>?;
