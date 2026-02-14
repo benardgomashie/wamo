@@ -116,9 +116,9 @@ export default function ReportsPage() {
             <Card key={campaign.id} className="border-red-200">
               <CardContent className="p-6">
                 <div className="flex gap-6">
-                  {campaign.imageUrl && (
+                  {campaign.proofUrls?.[0] && (
                     <img
-                      src={campaign.imageUrl}
+                      src={campaign.proofUrls[0]}
                       alt={campaign.title}
                       className="w-32 h-32 object-cover rounded-lg"
                     />
@@ -138,7 +138,9 @@ export default function ReportsPage() {
                             {campaign.reportCount || 1} {campaign.reportCount === 1 ? 'Report' : 'Reports'}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">by {campaign.creatorName}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          by {(campaign as any).creatorName || campaign.ownerId || 'Unknown'}
+                        </p>
                       </div>
                     </div>
 
@@ -152,7 +154,7 @@ export default function ReportsPage() {
                       <div>
                         <span className="text-gray-500">Raised:</span>
                         <span className="ml-2 font-semibold">
-                          {formatCurrency(campaign.currentAmount)}
+                          {formatCurrency(campaign.raisedAmount)}
                         </span>
                       </div>
                       <div>
@@ -188,7 +190,7 @@ export default function ReportsPage() {
                         Review Details
                       </Button>
 
-                      {campaign.status === 'pending_review' && (
+                      {campaign.status === 'pending' && (
                         <>
                           <Button
                             variant="primary"

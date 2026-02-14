@@ -821,8 +821,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
             onPressed: _isLoading ? null : _previousStep,
             child: const Text('Back'),
           ),
-        // Save Draft button on all steps (except first cause selection)
-        if (_currentStep > 0) ...[
+        // Save Draft button on all steps (except first and final)
+        if (_currentStep > 0 && !isFinal)
           TextButton.icon(
             onPressed: _isLoading ? null : _saveDraft,
             icon: const Icon(Icons.save_outlined, size: 18),
@@ -833,7 +833,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
               ),
             ),
           ),
-        ],
         const Spacer(),
         if (!isFinal)
           ElevatedButton.icon(
