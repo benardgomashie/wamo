@@ -119,12 +119,19 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
   Widget _buildDesktopLayout(bool isOwner) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: const [
-            Text('🧡', style: TextStyle(fontSize: 28)),
-            SizedBox(width: 8),
-            Text('wamo'),
-          ],
+        title: Image.asset(
+          'assets/images/wamo_logo.png',
+          height: 40,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Row(
+              children: [
+                Text('🧡', style: TextStyle(fontSize: 28)),
+                SizedBox(width: 8),
+                Text('wamo'),
+              ],
+            );
+          },
         ),
         centerTitle: false,
         actions: [
@@ -187,13 +194,20 @@ class _CampaignDetailScreenState extends State<CampaignDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(onPressed: () => Navigator.pop(context)),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Text('🧡', style: TextStyle(fontSize: 26)),
-            SizedBox(width: 6),
-            Text('wamo'),
-          ],
+        title: Image.asset(
+          'assets/images/wamo_logo.png',
+          height: 32,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('🧡', style: TextStyle(fontSize: 26)),
+                SizedBox(width: 6),
+                Text('wamo'),
+              ],
+            );
+          },
         ),
         actions: [
           IconButton(

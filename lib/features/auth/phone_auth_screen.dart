@@ -117,22 +117,32 @@ class _PhoneAuthScreenState extends State<PhoneAuthScreen> {
                     const SizedBox(height: AppTheme.spacingXL),
 
                     // Logo or branding
-                    Container(
-                      height: 80,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusL),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'W',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                    Center(
+                      child: Image.asset(
+                        'assets/images/wamo_logo.png',
+                        width: 150,
+                        height: 60,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 80,
+                            width: 80,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor,
+                              borderRadius: BorderRadius.circular(AppTheme.radiusL),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'W',
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
 

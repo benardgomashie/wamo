@@ -169,36 +169,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
           // Logo area
           Container(
             padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'W',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+            child: Image.asset(
+              'assets/images/wamo_logo.png',
+              height: 35,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'W',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Wamo',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ],
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Wamo',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
 
@@ -337,11 +344,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         children: [
+          const Text(
+            'Dashboard',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 16),
           Text(
             'Welcome back, ${user.name}!',
             style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: AppTheme.textSecondaryColor,
             ),
           ),
           const Spacer(),
@@ -367,7 +382,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildMobileLayout(dynamic user, UserProvider userProvider) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/wamo_logo.png',
+              height: 28,
+              fit: BoxFit.contain,
+              errorBuilder: (context, error, stackTrace) {
+                return const Text('Dashboard');
+              },
+            ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),

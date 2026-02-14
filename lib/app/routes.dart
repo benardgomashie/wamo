@@ -89,10 +89,32 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const DashboardScreen());
         
       case payoutHistory:
-        return MaterialPageRoute(builder: (_) => const PayoutHistoryScreen());
+        final args = settings.arguments as Map<String, dynamic>?;
+        final creatorId = args?['creatorId'] ?? '';
+        if (creatorId.isEmpty) {
+          return MaterialPageRoute(
+            builder: (_) => const Scaffold(
+              body: Center(child: Text('Creator ID required')),
+            ),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => PayoutHistoryScreen(creatorId: creatorId),
+        );
         
       case notifications:
-        return MaterialPageRoute(builder: (_) => const NotificationCenterScreen());
+        final args = settings.arguments as Map<String, dynamic>?;
+        final userId = args?['userId'] ?? '';
+        if (userId.isEmpty) {
+          return MaterialPageRoute(
+            builder: (_) => const Scaffold(
+              body: Center(child: Text('User ID required')),
+            ),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => NotificationCenterScreen(userId: userId),
+        );
         
       default:
         return MaterialPageRoute(

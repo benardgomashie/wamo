@@ -155,6 +155,13 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     }
   }
 
+  void _onCauseSelected(String cause) {
+    setState(() => _selectedCause = cause);
+    if (_currentStep == 0) {
+      _nextStep();
+    }
+  }
+
   void _previousStep() {
     if (_currentStep > 0) {
       setState(() => _currentStep--);
@@ -321,7 +328,28 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
             const SizedBox(height: AppTheme.spacingM),
             _buildProgressHeader(),
             const SizedBox(height: AppTheme.spacingL),
-            _buildCurrentStep(),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 280),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                final offsetTween = Tween<Offset>(
+                  begin: const Offset(0.0, 0.04),
+                  end: Offset.zero,
+                );
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: offsetTween.animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey<int>(_currentStep),
+                child: _buildCurrentStep(),
+              ),
+            ),
             const SizedBox(height: AppTheme.spacingXL),
             _buildActions(),
           ],
@@ -426,7 +454,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         selected ? AppTheme.accentColor : AppTheme.dividerColor;
 
     return InkWell(
-      onTap: () => setState(() => _selectedCause = cause),
+      onTap: () => _onCauseSelected(cause),
       borderRadius: BorderRadius.circular(16),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
