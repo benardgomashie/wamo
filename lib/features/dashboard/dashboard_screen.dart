@@ -9,6 +9,7 @@ import '../../core/utils/app_logger.dart';
 import '../../core/utils/responsive_utils.dart';
 import '../../core/widgets/web_widgets.dart';
 import '../../widgets/wamo_empty_state.dart';
+import '../../widgets/wamo_toast.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -994,17 +995,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.visibility_outlined, size: 20),
-                      tooltip: 'View',
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.campaignDetail,
-                          arguments: {'campaignId': campaign.id},
-                        );
-                      },
-                    ),
+                    if (campaign.status == 'draft') ...[
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        tooltip: 'Edit Draft',
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.createCampaign,
+                            arguments: {'campaignId': campaign.id},
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        tooltip: 'Delete Draft',
+                        onPressed: () => _confirmDeleteDraft(campaign.id),
+                      ),
+                    ] else
+                      IconButton(
+                        icon: const Icon(Icons.visibility_outlined, size: 20),
+                        tooltip: 'View',
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.campaignDetail,
+                            arguments: {'campaignId': campaign.id},
+                          );
+                        },
+                      ),
                   ],
                 ),
               ),
@@ -1129,11 +1148,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
+              
+              // Show edit/delete actions for drafts
+              if (campaign.status == 'draft') ...[
+                const SizedBox(height: AppTheme.spacingS),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.createCampaign,
+                          arguments: {'campaignId': campaign.id},
+                        );
+                      },
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Edit'),
+                    ),
+                    const SizedBox(width: AppTheme.spacingS),
+                    TextButton.icon(
+                      onPressed: () => _confirmDeleteDraft(campaign.id),
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      label: const Text('Delete'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppTheme.errorColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteDraft(String campaignId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Draft?'),
+        content: const Text(
+          'Are you sure you want to delete this draft campaign? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.errorColor,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _firestoreService.deleteCampaign(campaignId);
+        if (mounted) {
+          WamoToast.success(context, 'Draft deleted successfully');
+        }
+      } catch (e) {
+        if (mounted) {
+          WamoToast.error(context, 'Failed to delete draft: $e');
+        }
+      }
+    }
   }
 
   Widget _buildStatusChip(String status) {
@@ -1148,6 +1235,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 'pending':
         color = Colors.orange;
         label = 'Pending';
+        break;
+      case 'draft':
+        color = Colors.grey.shade600;
+        label = 'Draft';
         break;
       case 'completed':
         color = Colors.blue;

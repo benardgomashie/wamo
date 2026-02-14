@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -32,6 +33,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
   List<String> _proofImageUrls = [];
   bool _isLoading = false;
   bool _isEditMode = false;
+  Timer? _autoSaveTimer;
+  String? _lastSavedDraftId;
+  bool _hasUnsavedChanges = false;
 
   static const List<String> _stepTitles = [
     'Cause',
@@ -55,12 +59,24 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     super.initState();
     if (widget.campaignId != null) {
       _isEditMode = true;
+      _lastSavedDraftId = widget.campaignId;
       _loadCampaign();
     }
+    
+    // Setup auto-save listeners
+    _titleController.addListener(_onFieldChanged);
+    _storyController.addListener(_onFieldChanged);
+    _targetAmountController.addListener(_onFieldChanged);
+    _payoutDetailsController.addListener(_onFieldChanged);
   }
 
   @override
   void dispose() {
+    _autoSaveTimer?.cancel();
+    _titleController.removeListener(_onFieldChanged);
+    _storyController.removeListener(_onFieldChanged);
+    _targetAmountController.removeListener(_onFieldChanged);
+    _payoutDetailsController.removeListener(_onFieldChanged);
     _titleController.dispose();
     _storyController.dispose();
     _targetAmountController.dispose();
@@ -168,8 +184,58 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     }
   }
 
-  Future<void> _saveCampaign({required bool isDraft}) async {
-    if (!_validateStep()) return;
+  void _onFieldChanged() {
+    _hasUnsavedChanges = true;
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(const Duration(seconds: 3), () {
+      _saveDraftSilently();
+    });
+  }
+
+  Future<void> _saveDraftSilently() async {
+    if (!mounted) return;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
+    if (user == null) return;
+
+    // Basic validation - at least have title or story
+    if (_titleController.text.trim().isEmpty && 
+        _storyController.text.trim().isEmpty) {
+      return;
+    }
+
+    try {
+      final campaign = Campaign(
+        id: _lastSavedDraftId ?? '',
+        ownerId: user.id,
+        title: _titleController.text.trim().isEmpty 
+            ? 'Untitled Campaign' 
+            : _titleController.text.trim(),
+        cause: _selectedCause,
+        story: _storyController.text.trim(),
+        targetAmount: double.tryParse(_targetAmountController.text.trim()) ?? 0,
+        status: AppConstants.statusDraft,
+        createdAt: DateTime.now(),
+        endDate: _endDate,
+        payoutMethod: _selectedPayoutMethod,
+        payoutDetails: _payoutDetailsController.text.trim(),
+        proofUrls: _proofImageUrls,
+      );
+
+      if (_lastSavedDraftId != null && _lastSavedDraftId!.isNotEmpty) {
+        await _firestoreService.updateCampaign(
+            _lastSavedDraftId!, campaign.toMap());
+      } else {
+        final docId = await _firestoreService.createCampaign(campaign);
+        _lastSavedDraftId = docId;
+      }
+      _hasUnsavedChanges = false;
+    } catch (e) {
+      // Silent fail for auto-save
+    }
+  }
+
+  Future<void> _saveDraft() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = userProvider.currentUser;
     if (user == null) {
@@ -180,12 +246,66 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     setState(() => _isLoading = true);
     try {
       final campaign = Campaign(
-        id: widget.campaignId ?? '',
+        id: _lastSavedDraftId ?? widget.campaignId ?? '',
         ownerId: user.id,
-        title: _titleController.text.trim(),
+        title: _titleController.text.trim().isEmpty 
+            ? 'Untitled Campaign' 
+            : _titleController.text.trim(),
         cause: _selectedCause,
         story: _storyController.text.trim(),
-        targetAmount: double.parse(_targetAmountController.text.trim()),
+        targetAmount: double.tryParse(_targetAmountController.text.trim()) ?? 0,
+        status: AppConstants.statusDraft,
+        createdAt: DateTime.now(),
+        endDate: _endDate,
+        payoutMethod: _selectedPayoutMethod,
+        payoutDetails: _payoutDetailsController.text.trim(),
+        proofUrls: _proofImageUrls,
+      );
+
+      if (_lastSavedDraftId != null && _lastSavedDraftId!.isNotEmpty) {
+        await _firestoreService.updateCampaign(
+            _lastSavedDraftId!, campaign.toMap());
+      } else if (_isEditMode && widget.campaignId != null) {
+        await _firestoreService.updateCampaign(
+            widget.campaignId!, campaign.toMap());
+        _lastSavedDraftId = widget.campaignId;
+      } else {
+        final docId = await _firestoreService.createCampaign(campaign);
+        _lastSavedDraftId = docId;
+      }
+
+      if (!mounted) return;
+      _hasUnsavedChanges = false;
+      WamoToast.success(context, 'Draft saved successfully');
+    } catch (e) {
+      _showError('Failed to save draft: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _saveCampaign({required bool isDraft}) async {
+    if (!isDraft && !_validateStep()) return;
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final user = userProvider.currentUser;
+    if (user == null) {
+      _showError('User not authenticated');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final campaign = Campaign(
+        id: _lastSavedDraftId ?? widget.campaignId ?? '',
+        ownerId: user.id,
+        title: _titleController.text.trim().isEmpty 
+            ? 'Untitled Campaign' 
+            : _titleController.text.trim(),
+        cause: _selectedCause,
+        story: _storyController.text.trim(),
+        targetAmount: double.tryParse(_targetAmountController.text.trim()) ?? 0,
         status: isDraft ? AppConstants.statusDraft : AppConstants.statusPending,
         createdAt: DateTime.now(),
         endDate: _endDate,
@@ -194,7 +314,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         proofUrls: _proofImageUrls,
       );
 
-      if (_isEditMode) {
+      if (_lastSavedDraftId != null && _lastSavedDraftId!.isNotEmpty) {
+        await _firestoreService.updateCampaign(
+            _lastSavedDraftId!, campaign.toMap());
+      } else if (_isEditMode && widget.campaignId != null) {
         await _firestoreService.updateCampaign(
             widget.campaignId!, campaign.toMap());
       } else {
@@ -202,6 +325,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       }
 
       if (!mounted) return;
+      _hasUnsavedChanges = false;
       WamoToast.success(
         context,
         isDraft ? 'Campaign saved as draft' : 'Campaign submitted for review',
@@ -243,6 +367,18 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
                 ],
               )
             : _buildMainContent(maxWidth: 720),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          color: AppTheme.surfaceColor,
+          padding: const EdgeInsets.fromLTRB(
+            AppTheme.spacingM,
+            AppTheme.spacingS,
+            AppTheme.spacingM,
+            AppTheme.spacingM,
+          ),
+          child: _buildActions(),
+        ),
       ),
     );
   }
@@ -351,7 +487,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
               ),
             ),
             const SizedBox(height: AppTheme.spacingXL),
-            _buildActions(),
           ],
         ),
       ),
@@ -686,6 +821,19 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
             onPressed: _isLoading ? null : _previousStep,
             child: const Text('Back'),
           ),
+        // Save Draft button on all steps (except first cause selection)
+        if (_currentStep > 0) ...[
+          TextButton.icon(
+            onPressed: _isLoading ? null : _saveDraft,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: Text(
+              _hasUnsavedChanges ? 'Save Draft *' : 'Save Draft',
+              style: TextStyle(
+                color: _hasUnsavedChanges ? Colors.orange : null,
+              ),
+            ),
+          ),
+        ],
         const Spacer(),
         if (!isFinal)
           ElevatedButton.icon(
