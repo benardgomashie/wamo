@@ -359,25 +359,35 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: isDesktop
-            ? Row(
-                children: [
-                  _buildStepSidebar(),
-                  Expanded(child: _buildMainContent(maxWidth: 980)),
-                ],
-              )
-            : _buildMainContent(maxWidth: 720),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          color: AppTheme.surfaceColor,
-          padding: const EdgeInsets.fromLTRB(
-            AppTheme.spacingM,
-            AppTheme.spacingS,
-            AppTheme.spacingM,
-            AppTheme.spacingM,
-          ),
-          child: _buildActions(),
+        child: Column(
+          children: [
+            Expanded(
+              child: isDesktop
+                  ? Row(
+                      children: [
+                        _buildStepSidebar(),
+                        Expanded(child: _buildMainContent(maxWidth: 980)),
+                      ],
+                    )
+                  : _buildMainContent(maxWidth: 720),
+            ),
+            // Bottom actions bar
+            Container(
+              color: AppTheme.surfaceColor,
+              padding: const EdgeInsets.fromLTRB(
+                AppTheme.spacingM,
+                AppTheme.spacingS,
+                AppTheme.spacingM,
+                AppTheme.spacingM,
+              ),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppTheme.dividerColor, width: 1),
+                ),
+              ),
+              child: _buildActions(),
+            ),
+          ],
         ),
       ),
     );

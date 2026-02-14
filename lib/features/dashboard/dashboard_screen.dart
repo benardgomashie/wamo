@@ -482,55 +482,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
               const SizedBox(height: AppTheme.spacingL),
 
-              // Create Campaign CTA
-              Card(
-                elevation: 0,
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTheme.spacingM),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Ready to make a difference?',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Start your fundraising campaign today',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pushNamed(context, AppRoutes.createCampaign);
-                        },
-                        icon: const Icon(Icons.add_circle_outline),
-                        label: const Text('Create Campaign'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 16,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: AppTheme.spacingL),
-
               // Statistics cards
               if (_isLoadingStats)
                 const Center(child: CircularProgressIndicator())
@@ -780,72 +731,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-
-        // Create Campaign CTA
-        Container(
-          margin: const EdgeInsets.only(bottom: 24),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.primaryColor.withOpacity(0.1),
-                AppTheme.primaryColor.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppTheme.primaryColor.withOpacity(0.2),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.campaign_outlined,
-                size: 48,
-                color: AppTheme.primaryColor,
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Ready to make a difference?',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Start your fundraising campaign and reach your goals',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pushNamed(context, AppRoutes.createCampaign);
-                },
-                icon: const Icon(Icons.add_circle_outline, size: 24),
-                label: const Text('Create Campaign'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 20,
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
 
         // Statistics cards - use grid layout for desktop
         if (_isLoadingStats)
