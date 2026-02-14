@@ -1,41 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../app/theme.dart';
 import '../../app/constants.dart';
+import '../../app/theme.dart';
+import '../../core/models/campaign.dart';
 import '../../core/providers/user_provider.dart';
 import '../../core/services/firestore_service.dart';
-import '../../core/models/campaign.dart';
 import '../../widgets/wamo_toast.dart';
 import 'widgets/image_picker_widget.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
-  final String? campaignId; // For editing existing campaign
+  final String? campaignId;
 
-  const CreateCampaignScreen({
-    super.key,
-    this.campaignId,
-  });
+  const CreateCampaignScreen({super.key, this.campaignId});
 
   @override
   State<CreateCampaignScreen> createState() => _CreateCampaignScreenState();
 }
 
 class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _storyController = TextEditingController();
   final _targetAmountController = TextEditingController();
   final _payoutDetailsController = TextEditingController();
-
   final FirestoreService _firestoreService = FirestoreService();
 
+  int _currentStep = 0;
   String _selectedCause = AppConstants.campaignCauses.first;
   String _selectedPayoutMethod = 'mobile_money';
   DateTime _endDate = DateTime.now().add(const Duration(days: 30));
   List<String> _proofImageUrls = [];
   bool _isLoading = false;
   bool _isEditMode = false;
+
+  static const List<String> _stepTitles = [
+    'Cause',
+    'Story',
+    'Target',
+    'Proof',
+    'Payout',
+    'Review',
+  ];
+
+  static const Map<String, ({String emoji, String subtitle})> _causeMeta = {
+    'Medical': (emoji: '🩹', subtitle: 'Hospital bills...'),
+    'Education': (emoji: '🎓', subtitle: 'School fees...'),
+    'Emergency': (emoji: '🚨', subtitle: 'Urgent assistance...'),
+    'Funeral': (emoji: '🕊️', subtitle: 'Funeral costs...'),
+    'Community': (emoji: '🫶', subtitle: 'Projects & support for communities'),
+  };
 
   @override
   void initState() {
@@ -57,15 +70,14 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
   Future<void> _loadCampaign() async {
     setState(() => _isLoading = true);
-
     try {
       final campaign = await _firestoreService.getCampaign(widget.campaignId!);
-
       if (campaign != null) {
         setState(() {
           _titleController.text = campaign.title;
           _storyController.text = campaign.story;
-          _targetAmountController.text = campaign.targetAmount.toString();
+          _targetAmountController.text =
+              campaign.targetAmount.toStringAsFixed(2);
           _selectedCause = campaign.cause;
           _endDate = campaign.endDate;
           _selectedPayoutMethod = campaign.payoutMethod;
@@ -76,47 +88,89 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     } catch (e) {
       _showError('Failed to load campaign: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _selectEndDate() async {
-    final DateTime? picked = await showDatePicker(
+    final picked = await showDatePicker(
       context: context,
       initialDate: _endDate,
       firstDate: DateTime.now().add(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 90)),
       helpText: 'Select Campaign End Date',
     );
-
-    if (picked != null && picked != _endDate) {
-      setState(() {
-        _endDate = picked;
-      });
+    if (picked != null) {
+      setState(() => _endDate = picked);
     }
   }
 
-  Future<void> _saveCampaign({bool isDraft = true}) async {
-    if (!_formKey.currentState!.validate()) {
-      return;
+  bool _validateStep() {
+    if (_currentStep == 1) {
+      if (_titleController.text.trim().length < 10) {
+        _showError('Title must be at least 10 characters');
+        return false;
+      }
+      if (_storyController.text.trim().length <
+          AppConstants.minCampaignStoryLength) {
+        _showError(
+            'Story must be at least ${AppConstants.minCampaignStoryLength} characters');
+        return false;
+      }
     }
 
+    if (_currentStep == 2) {
+      final amount = double.tryParse(_targetAmountController.text.trim());
+      if (amount == null) {
+        _showError('Please enter a valid target amount');
+        return false;
+      }
+      if (amount < AppConstants.minDonationAmount ||
+          amount > AppConstants.maxCampaignAmount) {
+        _showError(
+            'Target must be between GH₵ ${AppConstants.minDonationAmount} and GH₵ ${AppConstants.maxCampaignAmount}');
+        return false;
+      }
+    }
+
+    if (_currentStep == 3 && _proofImageUrls.isEmpty) {
+      _showError('Please upload at least one proof image');
+      return false;
+    }
+
+    if (_currentStep == 4 && _payoutDetailsController.text.trim().isEmpty) {
+      _showError('Please enter payout details');
+      return false;
+    }
+
+    return true;
+  }
+
+  void _nextStep() {
+    if (!_validateStep()) return;
+    if (_currentStep < _stepTitles.length - 1) {
+      setState(() => _currentStep++);
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+    }
+  }
+
+  Future<void> _saveCampaign({required bool isDraft}) async {
+    if (!_validateStep()) return;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = userProvider.currentUser;
-
     if (user == null) {
       _showError('User not authenticated');
       return;
     }
 
-    // Require at least one proof image for submission
-    if (!isDraft && _proofImageUrls.isEmpty) {
-      _showError('Please upload at least one proof image');
-      return;
-    }
-
     setState(() => _isLoading = true);
-
     try {
       final campaign = Campaign(
         id: widget.campaignId ?? '',
@@ -124,8 +178,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         title: _titleController.text.trim(),
         cause: _selectedCause,
         story: _storyController.text.trim(),
-        targetAmount: double.parse(_targetAmountController.text),
-        status: isDraft ? 'draft' : 'pending',
+        targetAmount: double.parse(_targetAmountController.text.trim()),
+        status: isDraft ? AppConstants.statusDraft : AppConstants.statusPending,
         createdAt: DateTime.now(),
         endDate: _endDate,
         payoutMethod: _selectedPayoutMethod,
@@ -135,25 +189,23 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
       if (_isEditMode) {
         await _firestoreService.updateCampaign(
-          widget.campaignId!,
-          campaign.toMap(),
-        );
+            widget.campaignId!, campaign.toMap());
       } else {
         await _firestoreService.createCampaign(campaign);
       }
 
-      if (!context.mounted) return;
-
+      if (!mounted) return;
       WamoToast.success(
         context,
         isDraft ? 'Campaign saved as draft' : 'Campaign submitted for review',
       );
-
       Navigator.pop(context);
     } catch (e) {
       _showError('Failed to save campaign: $e');
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -163,332 +215,475 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProvider = Provider.of<UserProvider>(context);
-    final user = userProvider.currentUser;
-
-    if (_isLoading && !_isEditMode) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+    if (_isLoading && _isEditMode) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
+    final width = MediaQuery.of(context).size.width;
+    final isDesktop = width >= 1200;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Campaign' : 'Create Campaign'),
+        centerTitle: true,
       ),
       body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 840),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(AppTheme.spacingM),
+        child: isDesktop
+            ? Row(
                 children: [
-                  // Verification warning
-                  if (user?.verificationStatus != 'verified')
-                    Container(
-                      padding: const EdgeInsets.all(AppTheme.spacingM),
-                      margin: const EdgeInsets.only(bottom: AppTheme.spacingL),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                        border: Border.all(color: Colors.orange.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline,
-                              color: Colors.orange.shade700),
-                          const SizedBox(width: AppTheme.spacingM),
-                          Expanded(
-                            child: Text(
-                              'Your account needs verification before campaigns can go live',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.orange.shade800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Campaign Title
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Campaign Title',
-                      hintText: 'e.g., Help Save My Sister\'s Life',
-                      helperText: 'Make it clear and compelling',
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                    maxLength: 100,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter a campaign title';
-                      }
-                      if (value.trim().length < 10) {
-                        return 'Title must be at least 10 characters';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Campaign Cause
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCause,
-                    decoration: const InputDecoration(
-                      labelText: 'Campaign Cause',
-                      helperText: 'Select the category that best fits',
-                    ),
-                    items: AppConstants.campaignCauses.map((cause) {
-                      return DropdownMenuItem(
-                        value: cause,
-                        child: Text(cause),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedCause = value);
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Campaign Story
-                  TextFormField(
-                    controller: _storyController,
-                    decoration: const InputDecoration(
-                      labelText: 'Your Story',
-                      hintText:
-                          'Explain why you need help and how funds will be used...',
-                      helperText: 'Be detailed and honest',
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 8,
-                    maxLength: 2000,
-                    textCapitalization: TextCapitalization.sentences,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please tell your story';
-                      }
-                      if (value.trim().length < 100) {
-                        return 'Story must be at least 100 characters';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Target Amount
-                  TextFormField(
-                    controller: _targetAmountController,
-                    decoration: const InputDecoration(
-                      labelText: 'Target Amount (GH₵)',
-                      hintText: '5000.00',
-                      helperText:
-                          'Min: GH₵ ${AppConstants.minDonationAmount}, Max: GH₵ ${AppConstants.maxCampaignAmount}',
-                      prefixText: 'GH₵ ',
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d+\.?\d{0,2}')),
-                    ],
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter target amount';
-                      }
-                      final amount = double.tryParse(value);
-                      if (amount == null) {
-                        return 'Please enter a valid amount';
-                      }
-                      if (amount < AppConstants.minDonationAmount) {
-                        return 'Minimum amount is GH₵ ${AppConstants.minDonationAmount}';
-                      }
-                      if (amount > AppConstants.maxCampaignAmount) {
-                        return 'Maximum amount is GH₵ ${AppConstants.maxCampaignAmount}';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // End Date
-                  InkWell(
-                    onTap: _selectEndDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Campaign End Date',
-                        helperText: 'Maximum 90 days from today',
-                        suffixIcon: Icon(Icons.calendar_today),
-                      ),
-                      child: Text(
-                        '${_endDate.day}/${_endDate.month}/${_endDate.year}',
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Payout Method
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedPayoutMethod,
-                    decoration: const InputDecoration(
-                      labelText: 'Payout Method',
-                      helperText: 'How you want to receive funds',
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'mobile_money',
-                        child: Text('Mobile Money'),
-                      ),
-                      DropdownMenuItem(
-                        value: 'bank',
-                        child: Text('Bank Account'),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedPayoutMethod = value;
-                          _payoutDetailsController.clear();
-                        });
-                      }
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Payout Details
-                  TextFormField(
-                    controller: _payoutDetailsController,
-                    decoration: InputDecoration(
-                      labelText: _selectedPayoutMethod == 'mobile_money'
-                          ? 'Mobile Money Number'
-                          : 'Bank Account Details',
-                      hintText: _selectedPayoutMethod == 'mobile_money'
-                          ? '0241234567'
-                          : 'Account Number and Bank Name',
-                      helperText: 'Funds will be sent here after campaign ends',
-                    ),
-                    keyboardType: _selectedPayoutMethod == 'mobile_money'
-                        ? TextInputType.phone
-                        : TextInputType.text,
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Please enter payout details';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingXL),
-
-                  // Image Upload
-                  ImagePickerWidget(
-                    initialImages: _proofImageUrls,
-                    onImagesChanged: (urls) {
-                      setState(() {
-                        _proofImageUrls = urls;
-                      });
-                    },
-                    maxImages: 5,
-                    uploadPath: 'campaigns/${user?.id ?? 'temp'}',
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingXL),
-
-                  // Info box
-                  Container(
-                    padding: const EdgeInsets.all(AppTheme.spacingM),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppTheme.radiusM),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: AppTheme.primaryColor,
-                              size: 20,
-                            ),
-                            SizedBox(width: AppTheme.spacingS),
-                            Text(
-                              'Important Information',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppTheme.spacingS),
-                        Text(
-                          '• Platform fee: ${AppConstants.platformFeePercentage}% (paid by donors)\n'
-                          '• Campaigns are reviewed before going live\n'
-                          '• Upload proof documents to increase trust\n'
-                          '• Be honest and transparent in your story',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade700,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingXL),
-
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => _saveCampaign(isDraft: true),
-                          child: const Text('Save as Draft'),
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.spacingM),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () => _saveCampaign(isDraft: false),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
-                                )
-                              : const Text('Submit for Review'),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
+                  _buildStepSidebar(),
+                  Expanded(child: _buildMainContent(maxWidth: 980)),
                 ],
+              )
+            : _buildMainContent(maxWidth: 720),
+      ),
+    );
+  }
+
+  Widget _buildStepSidebar() {
+    return Container(
+      width: 260,
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        border: Border(
+          right:
+              BorderSide(color: AppTheme.dividerColor.withValues(alpha: 0.9)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppTheme.spacingL),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Create Campaign',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: AppTheme.spacingL),
+            for (int i = 0; i < _stepTitles.length; i++) _buildSidebarStep(i),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSidebarStep(int index) {
+    final isActive = _currentStep == index;
+    final isCompleted = _currentStep > index;
+    final bg = isActive
+        ? AppTheme.accentColor.withValues(alpha: 0.12)
+        : Colors.transparent;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 13,
+            backgroundColor: isActive || isCompleted
+                ? AppTheme.accentColor
+                : AppTheme.dividerColor,
+            child: Text(
+              '${index + 1}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
+          const SizedBox(width: 12),
+          Text(
+            _stepTitles[index],
+            style: TextStyle(
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              color: AppTheme.textPrimaryColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMainContent({required double maxWidth}) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth),
+        child: ListView(
+          padding: const EdgeInsets.all(AppTheme.spacingL),
+          children: [
+            Text(
+              _isEditMode ? 'Edit Campaign' : 'Create Campaign',
+              style: Theme.of(context).textTheme.displaySmall,
+            ),
+            const SizedBox(height: AppTheme.spacingM),
+            _buildProgressHeader(),
+            const SizedBox(height: AppTheme.spacingL),
+            _buildCurrentStep(),
+            const SizedBox(height: AppTheme.spacingXL),
+            _buildActions(),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProgressHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Step ${_currentStep + 1} of ${_stepTitles.length}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(width: AppTheme.spacingM),
+            Expanded(
+              child: LinearProgressIndicator(
+                value: (_currentStep + 1) / _stepTitles.length,
+                minHeight: 5,
+                borderRadius: BorderRadius.circular(12),
+                backgroundColor: AppTheme.dividerColor,
+                color: AppTheme.accentColor,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCurrentStep() {
+    switch (_currentStep) {
+      case 0:
+        return _buildCauseStep();
+      case 1:
+        return _buildStoryStep();
+      case 2:
+        return _buildTargetStep();
+      case 3:
+        return _buildProofStep();
+      case 4:
+        return _buildPayoutStep();
+      default:
+        return _buildReviewStep();
+    }
+  }
+
+  Widget _buildCauseStep() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final desktop = screenWidth >= 1200;
+    final contentWidth =
+        desktop ? 980.0 : (screenWidth - (AppTheme.spacingL * 2));
+    const cardGap = AppTheme.spacingM;
+    final columns = desktop ? 3 : 2;
+    final cardWidth = (contentWidth - (cardGap * (columns - 1))) / columns;
+
+    const causes = AppConstants.campaignCauses;
+    final mainCauses = causes.where((c) => c != 'Community').toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('What is your campaign for?',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTheme.spacingL),
+        Wrap(
+          spacing: cardGap,
+          runSpacing: cardGap,
+          children: [
+            for (final cause in mainCauses)
+              _buildCauseCard(
+                cause: cause,
+                width: cardWidth,
+                selected: _selectedCause == cause,
+              ),
+            _buildCauseCard(
+              cause: 'Community',
+              width: desktop ? (cardWidth * 2) + cardGap : contentWidth,
+              selected: _selectedCause == 'Community',
+              horizontal: true,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCauseCard({
+    required String cause,
+    required double width,
+    required bool selected,
+    bool horizontal = false,
+  }) {
+    final meta =
+        _causeMeta[cause] ?? (emoji: '📌', subtitle: 'Support campaign...');
+    const baseBg = AppTheme.surfaceColor;
+    final selectedBorder =
+        selected ? AppTheme.accentColor : AppTheme.dividerColor;
+
+    return InkWell(
+      onTap: () => setState(() => _selectedCause = cause),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: width,
+        padding: const EdgeInsets.all(AppTheme.spacingM),
+        decoration: BoxDecoration(
+          color: baseBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: selectedBorder, width: selected ? 2 : 1),
+        ),
+        child: horizontal
+            ? Row(
+                children: [
+                  Text(meta.emoji, style: const TextStyle(fontSize: 48)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(cause,
+                            style: Theme.of(context).textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        Text(meta.subtitle,
+                            style: Theme.of(context).textTheme.bodyLarge),
+                      ],
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(meta.emoji, style: const TextStyle(fontSize: 44)),
+                  const SizedBox(height: 12),
+                  Text(cause, style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(meta.subtitle,
+                      style: Theme.of(context).textTheme.bodyLarge),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildStoryStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Tell your story', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTheme.spacingL),
+        TextFormField(
+          controller: _titleController,
+          maxLength: AppConstants.maxCampaignTitleLength,
+          decoration: const InputDecoration(
+            labelText: 'Campaign Title',
+            hintText: 'e.g., Help Save My Sister\'s Life',
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingM),
+        TextFormField(
+          controller: _storyController,
+          maxLines: 8,
+          maxLength: AppConstants.maxCampaignStoryLength,
+          decoration: const InputDecoration(
+            labelText: 'Your Story',
+            hintText: 'Explain why you need help and how funds will be used...',
+            alignLabelWithHint: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTargetStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Set target and timeline',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTheme.spacingL),
+        TextFormField(
+          controller: _targetAmountController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))
+          ],
+          decoration: const InputDecoration(
+            labelText: 'Target Amount (GH₵)',
+            hintText: '5000.00',
+            prefixText: 'GH₵ ',
+          ),
+        ),
+        const SizedBox(height: AppTheme.spacingM),
+        InkWell(
+          onTap: _selectEndDate,
+          child: InputDecorator(
+            decoration: const InputDecoration(
+              labelText: 'Campaign End Date',
+              suffixIcon: Icon(Icons.calendar_today),
+            ),
+            child: Text(
+              '${_endDate.day}/${_endDate.month}/${_endDate.year}',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProofStep() {
+    final user = Provider.of<UserProvider>(context, listen: false).currentUser;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Add proof images', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTheme.spacingL),
+        ImagePickerWidget(
+          initialImages: _proofImageUrls,
+          onImagesChanged: (urls) => setState(() => _proofImageUrls = urls),
+          maxImages: AppConstants.maxImagesPerCampaign,
+          uploadPath: 'campaigns/${user?.id ?? 'temp'}',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPayoutStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('How should payouts work?',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTheme.spacingL),
+        DropdownButtonFormField<String>(
+          initialValue: _selectedPayoutMethod,
+          decoration: const InputDecoration(labelText: 'Payout Method'),
+          items: const [
+            DropdownMenuItem(
+                value: 'mobile_money', child: Text('Mobile Money')),
+            DropdownMenuItem(value: 'bank', child: Text('Bank Account')),
+          ],
+          onChanged: (value) {
+            if (value != null) {
+              setState(() => _selectedPayoutMethod = value);
+            }
+          },
+        ),
+        const SizedBox(height: AppTheme.spacingM),
+        TextFormField(
+          controller: _payoutDetailsController,
+          keyboardType: _selectedPayoutMethod == 'mobile_money'
+              ? TextInputType.phone
+              : TextInputType.text,
+          decoration: InputDecoration(
+            labelText: _selectedPayoutMethod == 'mobile_money'
+                ? 'Mobile Money Number'
+                : 'Bank Account Details',
+            hintText: _selectedPayoutMethod == 'mobile_money'
+                ? '0241234567'
+                : 'Account Number and Bank Name',
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewStep() {
+    final amount = _targetAmountController.text.trim().isEmpty
+        ? '0.00'
+        : _targetAmountController.text.trim();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Review your campaign',
+            style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppTheme.spacingL),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(AppTheme.spacingM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _reviewRow('Cause', _selectedCause),
+                _reviewRow('Title', _titleController.text.trim()),
+                _reviewRow('Target', 'GH₵ $amount'),
+                _reviewRow(
+                    'Payout',
+                    _selectedPayoutMethod == 'mobile_money'
+                        ? 'Mobile Money'
+                        : 'Bank'),
+                _reviewRow(
+                    'Proof Images', '${_proofImageUrls.length} uploaded'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _reviewRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '-' : value,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActions() {
+    final isFinal = _currentStep == _stepTitles.length - 1;
+    return Row(
+      children: [
+        if (_currentStep > 0)
+          TextButton(
+            onPressed: _isLoading ? null : _previousStep,
+            child: const Text('Back'),
+          ),
+        const Spacer(),
+        if (!isFinal)
+          ElevatedButton.icon(
+            onPressed: _isLoading ? null : _nextStep,
+            iconAlignment: IconAlignment.end,
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text('Continue'),
+          ),
+        if (isFinal) ...[
+          OutlinedButton(
+            onPressed: _isLoading ? null : () => _saveCampaign(isDraft: true),
+            child: const Text('Save Draft'),
+          ),
+          const SizedBox(width: AppTheme.spacingM),
+          ElevatedButton(
+            onPressed: _isLoading ? null : () => _saveCampaign(isDraft: false),
+            child: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('Submit for Review'),
+          ),
+        ],
+      ],
     );
   }
 }
