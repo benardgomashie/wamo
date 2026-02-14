@@ -31,11 +31,15 @@ export interface VerificationData {
 export interface Campaign {
   id: string;
   ownerId: string;
+  creatorName?: string;
   title: string;
+  category?: string;
   cause: string;
   story: string;
   targetAmount: number;
+  currentAmount?: number;
   raisedAmount: number;
+  imageUrl?: string;
   status: 'draft' | 'pending' | 'active' | 'rejected' | 'frozen' | 'completed' | 'expired';
   createdAt: Date | string;
   endDate: Date | string;

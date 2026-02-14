@@ -814,51 +814,64 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
   Widget _buildActions() {
     final isFinal = _currentStep == _stepTitles.length - 1;
-    return Row(
-      children: [
-        if (_currentStep > 0)
-          TextButton(
-            onPressed: _isLoading ? null : _previousStep,
-            child: const Text('Back'),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Left side - Back button
+          SizedBox(
+            width: 80,
+            child: _currentStep > 0
+                ? TextButton(
+                    onPressed: _isLoading ? null : _previousStep,
+                    child: const Text('Back'),
+                  )
+                : const SizedBox.shrink(),
           ),
-        // Save Draft button on all steps (except first and final)
-        if (_currentStep > 0 && !isFinal)
-          TextButton.icon(
-            onPressed: _isLoading ? null : _saveDraft,
-            icon: const Icon(Icons.save_outlined, size: 18),
-            label: Text(
-              _hasUnsavedChanges ? 'Save Draft *' : 'Save Draft',
-              style: TextStyle(
-                color: _hasUnsavedChanges ? Colors.orange : null,
+          
+          // Center - Save Draft button (on intermediate steps)
+          if (_currentStep > 0 && !isFinal)
+            TextButton.icon(
+              onPressed: _isLoading ? null : _saveDraft,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: Text(
+                _hasUnsavedChanges ? 'Save Draft *' : 'Save Draft',
+                style: TextStyle(
+                  color: _hasUnsavedChanges ? Colors.orange : null,
+                ),
               ),
             ),
-          ),
-        const Spacer(),
-        if (!isFinal)
-          ElevatedButton.icon(
-            onPressed: _isLoading ? null : _nextStep,
-            iconAlignment: IconAlignment.end,
-            icon: const Icon(Icons.arrow_forward),
-            label: const Text('Continue'),
-          ),
-        if (isFinal) ...[
-          OutlinedButton(
-            onPressed: _isLoading ? null : () => _saveCampaign(isDraft: true),
-            child: const Text('Save Draft'),
-          ),
-          const SizedBox(width: AppTheme.spacingM),
-          ElevatedButton(
-            onPressed: _isLoading ? null : () => _saveCampaign(isDraft: false),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Submit for Review'),
-          ),
+          
+          const Spacer(),
+          
+          // Right side - Continue or Submit buttons
+          if (!isFinal)
+            ElevatedButton.icon(
+              onPressed: _isLoading ? null : _nextStep,
+              iconAlignment: IconAlignment.end,
+              icon: const Icon(Icons.arrow_forward, size: 20),
+              label: const Text('Continue'),
+            ),
+          if (isFinal) ...[
+            OutlinedButton(
+              onPressed: _isLoading ? null : () => _saveCampaign(isDraft: true),
+              child: const Text('Save Draft'),
+            ),
+            const SizedBox(width: AppTheme.spacingM),
+            ElevatedButton(
+              onPressed: _isLoading ? null : () => _saveCampaign(isDraft: false),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Submit for Review'),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Campaign } from '@/types/campaign';
+import { Campaign, VerificationData } from '@/types/campaign';
 import {
   Dialog,
   DialogContent,
@@ -38,7 +38,24 @@ export default function CampaignDetailModal({
   onUpdate,
 }: CampaignDetailModalProps) {
   const [saving, setSaving] = useState(false);
-  const [verification, setVerification] = useState(campaign?.verification || {});
+  const [verification, setVerification] = useState<VerificationData>({
+    phoneNumber: campaign?.verification?.phoneNumber || '',
+    phoneVerified: campaign?.verification?.phoneVerified || false,
+    fullName: campaign?.verification?.fullName || '',
+    idType: campaign?.verification?.idType,
+    idNumber: campaign?.verification?.idNumber,
+    idImageUrl: campaign?.verification?.idImageUrl,
+    selfieUrl: campaign?.verification?.selfieUrl,
+    identityVerified: campaign?.verification?.identityVerified || false,
+    proofDocuments: campaign?.verification?.proofDocuments || [],
+    needVerified: campaign?.verification?.needVerified || false,
+    momoNetwork: campaign?.verification?.momoNetwork,
+    momoNumber: campaign?.verification?.momoNumber,
+    momoVerified: campaign?.verification?.momoVerified || false,
+    verificationNotes: campaign?.verification?.verificationNotes || '',
+    requestedInfo: campaign?.verification?.requestedInfo,
+    redFlags: campaign?.verification?.redFlags || [],
+  });
 
   if (!campaign) return null;
 
@@ -98,11 +115,15 @@ export default function CampaignDetailModal({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <span className="text-gray-500">Creator:</span>
-              <span className="ml-2 font-semibold">{campaign.creatorName}</span>
+              <span className="ml-2 font-semibold">
+                {campaign.creatorName || campaign.ownerId || 'Unknown'}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Category:</span>
-              <span className="ml-2 font-semibold capitalize">{campaign.category}</span>
+              <span className="ml-2 font-semibold capitalize">
+                {campaign.category || campaign.cause || 'general'}
+              </span>
             </div>
             <div>
               <span className="text-gray-500">Target:</span>
@@ -207,10 +228,10 @@ export default function CampaignDetailModal({
                 </button>
               </div>
               <div className="ml-8 space-y-2 text-sm">
-                <p className="text-gray-600">Expected: {getProofLabel(campaign.category)}</p>
-                {campaign.verification?.proofDocuments?.length > 0 ? (
+                <p className="text-gray-600">Expected: {getProofLabel(campaign.category || campaign.cause || '')}</p>
+                {(campaign.verification?.proofDocuments?.length ?? 0) > 0 ? (
                   <div className="space-y-1">
-                    {campaign.verification.proofDocuments.map((doc, idx) => (
+                    {(campaign.verification?.proofDocuments ?? []).map((doc, idx) => (
                       <a
                         key={idx}
                         href={doc.url}
